@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Partner Availability Solution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+
+/* Layout: warehouse-label header, sticky tab rail, one working panel per tab. Receipt-paper mono for data, condensed sans for labels. */
+:root{
+  --bg:#eef1f0; --paper:#fbfcfb; --ink:#15201c; --muted:#5a6863; --line:#cfd8d4;
+  --accent:#1d5d78; --accent-soft:#dcebf1; --mark:#c9821f; --mark-soft:#f6e7cf;
+  --good:#22764a; --good-soft:#dcefe3; --warn:#9a6a08; --warn-soft:#f5ebcf; --bad:#b03a2e; --bad-soft:#f5dcd8;
+  --code:#f3f6f5;
+  --hero1:#0e3a4a; --hero2:#1d6b84; --onhero:#f2f7f8; --onhero-muted:#bcd5dd; --onhero-mark:#f5c27a;
+  --l1:#3f5fb5; --l1s:#e4eaf9; --l2:#11806f; --l2s:#d9f1ec; --l3:#7a4fb0; --l3s:#eee6f7; --l4:#c26a12; --l4s:#f9e9d8;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --paper:#161e1c; --ink:#e3ebe8; --muted:#97a6a1; --line:#2c3835;
+  --accent:#6fb3d0; --accent-soft:#183039; --mark:#e3a24a; --mark-soft:#3a2c17;
+  --good:#5cc489; --good-soft:#163024; --warn:#e0b048; --warn-soft:#352b12; --bad:#ec7b6e; --bad-soft:#3a1d19;
+  --code:#111917; --hero1:#0a222b; --hero2:#134657; --onhero:#eaf3f5; --onhero-muted:#9fbcc5; --onhero-mark:#f3b765;
+  --l1:#93acf0; --l1s:#1d2744; --l2:#55cbb6; --l2s:#13322d; --l3:#bd9ce8; --l3s:#2b2242; --l4:#f1a75c; --l4s:#3b2915; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --paper:#161e1c; --ink:#e3ebe8; --muted:#97a6a1; --line:#2c3835;
+  --accent:#6fb3d0; --accent-soft:#183039; --mark:#e3a24a; --mark-soft:#3a2c17;
+  --good:#5cc489; --good-soft:#163024; --warn:#e0b048; --warn-soft:#352b12; --bad:#ec7b6e; --bad-soft:#3a1d19;
+  --code:#111917; --hero1:#0a222b; --hero2:#134657; --onhero:#eaf3f5; --onhero-muted:#9fbcc5; --onhero-mark:#f3b765;
+  --l1:#93acf0; --l1s:#1d2744; --l2:#55cbb6; --l2s:#13322d; --l3:#bd9ce8; --l3s:#2b2242; --l4:#f1a75c; --l4s:#3b2915; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h2{font-size:1.6rem;font-weight:700}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0}
+.mono{font-family:var(--mono)}
+.label{font-family:var(--display);font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* header */
+header.top{background:linear-gradient(120deg,var(--hero1),var(--hero2));color:var(--onhero);border-bottom:4px solid var(--mark)}
+header.top .note{color:var(--onhero-muted)}
+header.top .wrap{padding-block:22px 18px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:end}
+.brandline{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:.72rem;border:1.5px solid var(--onhero);padding:2px 7px;border-radius:3px}
+.tag.mark{border-color:var(--onhero-mark);color:var(--onhero-mark)}
+header h1{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700}
+.thesis{color:var(--onhero-muted);max-width:68ch;margin-top:6px}
+.barcode{height:44px;width:150px;background:repeating-linear-gradient(90deg,var(--onhero) 0 2px,transparent 2px 4px,var(--onhero) 4px 5px,transparent 5px 8px,var(--onhero) 8px 11px,transparent 11px 12px);opacity:.85}
+.barcode-wrap{text-align:center}
+.barcode-wrap .mono{font-size:.7rem;color:var(--onhero-muted)}
+@media (max-width:640px){header.top .wrap{grid-template-columns:1fr}.barcode-wrap{display:none}}
+
+/* tabs */
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin}
+nav.tabs button{font-family:var(--display);font-weight:600;font-size:.92rem;background:none;border:0;color:var(--muted);padding:12px 12px 10px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button .n{font-family:var(--mono);font-size:.7rem;margin-right:6px;opacity:.7}
+nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--mark)}
+nav.tabs button[aria-selected="true"] .n{color:var(--mark);opacity:1}
+.intro .label{color:var(--accent)}
+nav.tabs button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+main .wrap{padding-block:26px 60px}
+section.panel{display:grid;gap:22px}
+.intro{display:grid;gap:6px;max-width:75ch}
+.intro p{color:var(--muted)}
+
+.say{background:var(--mark-soft);border-left:4px solid var(--mark);padding:14px 16px;border-radius:0 6px 6px 0}
+.say .label{color:var(--mark)}
+.say p{margin-top:4px;font-size:.98rem}
+
+.box{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:16px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+.min0{min-width:0}
+
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--display);font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:.74rem;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.info{background:var(--accent-soft);color:var(--accent)}
+
+button.btn{font-family:var(--display);font-weight:600;font-size:.9rem;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);padding:7px 14px;border-radius:4px;cursor:pointer}
+button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+button.btn:hover{border-color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+select,input[type=number]{font-family:var(--body);font-size:.9rem;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink)}
+input[type=number]{width:80px}
+
+/* architecture */
+.arch{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:stretch}
+@media (max-width:900px){.arch{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.arch{grid-template-columns:1fr}}
+.lane{display:flex;flex-direction:column;gap:10px}
+.lane .label{padding-bottom:4px;border-bottom:2px solid var(--ink)}
+.node{text-align:left;background:var(--paper);border:1.5px solid var(--line);border-radius:6px;padding:10px 12px;cursor:pointer;font-family:var(--body);color:var(--ink)}
+.node b{display:block;font-family:var(--display);font-size:.98rem}
+.node span{font-size:.8rem;color:var(--muted)}
+.node.core{font-weight:500}
+.lane .node{box-shadow:inset 4px 0 0 var(--lc)}
+.lane .node.core{background:var(--lcs);border-color:var(--lc)}
+.lane .label{color:var(--lc);border-bottom-color:var(--lc)}
+.lane.l1{--lc:var(--l1);--lcs:var(--l1s)}.lane.l2{--lc:var(--l2);--lcs:var(--l2s)}.lane.l3{--lc:var(--l3);--lcs:var(--l3s)}.lane.l4{--lc:var(--l4);--lcs:var(--l4s)}
+.chip{display:inline-block;padding:3px 10px;border-radius:4px;font-family:var(--display);font-weight:600;white-space:nowrap}
+.chip.l1{background:var(--l1s);color:var(--l1)}.chip.l2{background:var(--l2s);color:var(--l2)}.chip.l3{background:var(--l3s);color:var(--l3)}.chip.l4{background:var(--l4s);color:var(--l4)}
+.box h3{color:var(--ink)}
+.box{border-top:3px solid var(--accent-soft)}
+.seg .id.env{color:var(--l3)}.seg .id.body{color:var(--l2)}
+.node[aria-pressed="true"]{border-color:var(--mark);background:var(--mark-soft)}
+.flowline{font-family:var(--mono);font-size:.78rem;color:var(--muted);background:var(--code);border:1px dashed var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:pre}
+.detail h3{margin-bottom:8px}
+.detail dl{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;margin:0}
+.detail dt{font-family:var(--display);font-weight:600;color:var(--muted);font-size:.85rem}
+.detail dd{margin:0}
+@media (max-width:520px){.detail dl{grid-template-columns:1fr}}
+
+/* engine */
+.modes{display:inline-flex;border:1.5px solid var(--ink);border-radius:5px;overflow:hidden}
+.modes button{border:0;background:var(--paper);color:var(--ink);font-family:var(--display);font-weight:600;padding:7px 14px;cursor:pointer}
+.modes button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+#mNaive[aria-pressed="true"]{background:var(--bad);color:var(--paper)}
+#mShared[aria-pressed="true"]{background:var(--good);color:var(--paper)}
+#stackPick button[aria-pressed="true"]{background:var(--accent);color:var(--paper)}
+.banner{padding:12px 14px;border-radius:6px;font-weight:500}
+.banner.bad{background:var(--bad-soft);color:var(--bad)}
+.banner.good{background:var(--good-soft);color:var(--good)}
+.bigsum{display:flex;gap:22px;flex-wrap:wrap}
+.bigsum div{display:grid}
+.bigsum .v{font-family:var(--mono);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums}
+.bom{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.log{font-family:var(--mono);font-size:.78rem;background:var(--code);border-radius:6px;padding:10px 12px;max-height:240px;overflow:auto;display:grid;gap:4px}
+.log .t{color:var(--muted)}
+td input[type=number]{width:64px;padding:3px 5px}
+
+/* receipt / 846 */
+.receipt{font-family:var(--mono);font-size:.82rem;background:var(--code);border:1px solid var(--line);border-radius:6px;padding:12px 0;overflow-x:auto}
+.seg{display:block;padding:1px 14px;white-space:pre;cursor:default}
+.seg:hover,.seg.on{background:var(--accent-soft)}
+.seg .id{color:var(--accent);font-weight:600}
+
+pre.code{font-family:var(--mono);font-size:.8rem;background:var(--code);border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto;margin:0;line-height:1.5}
+.cfg{display:grid;gap:8px}
+.cfg .head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.note{font-size:.82rem;color:var(--muted)}
+
+/* plan */
+.phase{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.phase .wk{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.phase .wk b{display:block;font-family:var(--display);font-size:1rem;color:var(--ink)}
+.gantt{height:8px;background:var(--line);border-radius:4px;position:relative;margin-top:8px}
+.gantt i{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:4px}
+@media (max-width:560px){.phase{grid-template-columns:1fr}}
+ul.tight{margin:6px 0 0;padding-left:18px}
+ul.tight li{margin:2px 0}
+
+.test{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.test .idx{font-family:var(--mono);color:var(--muted);font-size:.8rem;padding-top:2px}
+.test p.why{color:var(--muted);font-size:.86rem}
+.qa{display:grid;gap:12px}
+.qa details{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.qa summary{cursor:pointer;font-family:var(--display);font-weight:600}
+.qa details p{margin-top:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div>
+      <div class="brandline"><span class="tag">SOLUTION APPROACH</span><span class="tag mark">ILLUSTRATIVE DATA</span><span class="mono note">Scenario: Kestrel Printing Systems and its channel partners (fictional)</span></div>
+      <h1>Partner Availability Solution</h1>
+      <p class="thesis">One trusted availability number, built on Dynamics 365, published three ways: an EDI 846 for distributors, a partner portal for distributors and resellers, and Power BI for the internal team. Kits and conversions draw from one shared parts pool, so the same printer is never promised twice.</p>
+    </div>
+    <div class="barcode-wrap"><div class="barcode" aria-hidden="true"></div><div class="mono">KST-AVL-2026-10</div></div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Blueprint sections">
+  <div class="wrap" role="tablist" id="tabbar"></div>
+</nav>
+
+<main><div class="wrap" id="views">
+
+<!-- 1 OVERVIEW -->
+<section class="panel" data-view="pitch">
+  <div class="intro"><span class="label">Overview</span><h2>Trusted stock visibility for distributors and resellers</h2>
+  <p>A working build that shares real-time availability through EDI and a partner portal, with kits, conversions and multi-party access handled correctly. The companies below are fictional and stand in for a real two-tier channel.</p></div>
+  <div class="box"><h3>Who is who in this build</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Company</th><th>Role</th><th>Profile</th><th>How it connects</th></tr></thead>
+      <tbody>
+        <tr><td><b>Kestrel Printing Systems</b></td><td><span class="pill info">Manufacturer</span></td><td>Makes POS, label and kitchen printers and sells them as single units, converted models and bundles. Runs Dynamics 365 Supply Chain Management with one US distribution center.</td><td>Owns the stock and publishes availability</td></tr>
+        <tr><td><b>NorthStar Distribution</b></td><td><span class="pill good">Distributor</span></td><td>National IT distributor with high order volume and its own ERP.</td><td>EDI: receives 846, sends 850, receives 855</td></tr>
+        <tr><td><b>Meridian Supply</b></td><td><span class="pill good">Distributor</span></td><td>Regional distributor with a smaller team and no EDI setup.</td><td>Partner portal: exact stock and online ordering</td></tr>
+        <tr><td><b>Pinnacle POS Solutions</b></td><td><span class="pill warn">Reseller</span></td><td>Installs checkout systems for retail stores. Buys through NorthStar.</td><td>Partner portal: stock bands only</td></tr>
+        <tr><td><b>Harbor Retail Tech</b></td><td><span class="pill warn">Reseller</span></td><td>Sets up kitchen and ordering systems for restaurants. Buys through Meridian.</td><td>Partner portal: stock bands only</td></tr>
+        <tr><td><b>Kestrel Internal Ops</b></td><td><span class="pill bad">Internal</span></td><td>Kestrel's operations and customer service team.</td><td>Full view of stock, holds and all orders</td></tr>
+      </tbody></table></div></div>
+  <div class="grid2">
+    <div class="box min0"><h3>The challenge</h3>
+      <ul class="tight">
+        <li>Customers call or email to check stock, or work from a stale spreadsheet.</li>
+        <li>Kits and conversions make the same unit look available in more than one place.</li>
+        <li>Distributors and resellers need different levels of detail.</li>
+        <li>A wrong number becomes a backorder and a lost order.</li>
+      </ul></div>
+    <div class="box min0"><h3>The outcome</h3>
+      <ul class="tight">
+        <li>One availability definition, signed off by operations, IT and accounting.</li>
+        <li>Self-service stock checks without a phone call.</li>
+        <li>No double promises, enforced by soft reservations.</li>
+        <li>Controlled visibility per customer and user type.</li>
+        <li>Fill rate and feed health reporting for the internal team.</li>
+      </ul></div>
+  </div>
+  <div class="box"><h3>The approach in four layers</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Layer</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip l1">1. Source of truth</span></td><td>The ERP and warehouse system stay the record for on hand, reservations, holds and bills of materials. Nothing customer-facing reads them directly.</td></tr>
+        <tr><td><span class="chip l2">2. Availability</span></td><td>One calculated measure: on hand minus reservations, holds, soft reservations and a safety buffer. Kits and conversions are calculated from one shared parts pool.</td></tr>
+        <tr><td><span class="chip l3">3. Rules</span></td><td>A single rules table decides who sees what. Distributors see exact quantities, resellers see stock bands, no one sees another customer's orders.</td></tr>
+        <tr><td><span class="chip l4">4. Outlets</span></td><td>The same number goes out as an EDI 846 feed, a partner portal and internal reporting. Every order, by EDI or portal, takes a soft reservation the moment it arrives.</td></tr>
+      </tbody></table></div></div>
+  <div class="box"><h3>Example tool stack (Microsoft)</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Layer</th><th>Tool</th><th>Why this tool</th></tr></thead>
+      <tbody id="stackRows"></tbody>
+    </table></div>
+    <p class="note" style="margin-top:8px">See Application stack for the same design on Business Central, NetSuite or SAP.</p></div>
+  <div class="grid2">
+    <div class="box min0"><h3>Guiding principles</h3>
+      <ul class="tight">
+        <li>Extend the ERP; never keep a second copy of inventory.</li>
+        <li>One definition of available, used by every channel.</li>
+        <li>Kits never carry their own stock number.</li>
+        <li>Visibility rules are data, not code.</li>
+        <li>Every rule has a test before a partner connects.</li>
+      </ul></div>
+    <div class="box min0"><h3>Before the first partner connects</h3>
+      <ul class="tight">
+        <li>BOMs complete and checked for every kit and converted model.</li>
+        <li>Safety buffers and reseller bands approved by operations and sales.</li>
+        <li>EDI or portal channel agreed with each distributor.</li>
+        <li>All control tests passing on the Tests tab.</li>
+        <li>Pilot with NorthStar and one reseller before full rollout.</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- 2 ARCHITECTURE -->
+<section class="panel" data-view="architecture" hidden>
+  <div class="intro"><span class="label">Architecture</span><h2>Four layers, one number</h2>
+  <p>Select any box to see what it does, why it is there, and who owns it.</p></div>
+  <div class="arch" id="arch"></div>
+  <div class="flowline">Order path:  EDI 850 or portal order  →  soft reservation in Inventory Visibility  →  accepted / partial / rejected  →  sales order in D365  →  EDI 855 back to distributor</div>
+  <div class="box detail" id="archDetail"></div>
+</section>
+
+<!-- 2b STACK -->
+<section class="panel" data-view="stack" hidden>
+  <div class="intro"><span class="label">Application stack</span><h2>The same design on any ERP</h2>
+  <p>This build uses the Microsoft stack. The same ten application types exist on every platform; select one to see which product fills each role and how much is native, configured, or custom.</p></div>
+  <div class="row"><span class="label">Platform</span><div class="modes" role="group" aria-label="Platform" id="stackPick"></div></div>
+  <div class="box min0"><div class="row" style="justify-content:space-between"><h3 id="stackTitle"></h3><span class="note" id="stackFit"></span></div>
+    <p class="note" id="stackNote" style="margin-top:4px"></p>
+    <div class="scroll" style="margin-top:10px"><table>
+      <thead><tr><th>Application type</th><th>Product</th><th>Fit</th><th>Job in this build</th></tr></thead>
+      <tbody id="stackPickRows"></tbody>
+    </table></div></div>
+  <div class="box min0"><h3>Market options by application type</h3><p class="note" style="margin-top:4px">One product is needed from each row. The ERP and WMS are usually in place before a project like this starts.</p>
+    <div class="scroll" style="margin-top:10px"><table>
+      <thead><tr><th>Application type</th><th>What it does</th><th>Examples</th></tr></thead>
+      <tbody id="catRows"></tbody>
+    </table></div></div>
+</section>
+
+<!-- 3 ENGINE -->
+<section class="panel" data-view="engine" hidden>
+  <div class="intro"><span class="label">Live availability engine</span><h2>The kit problem, and the fix, working</h2>
+  <p>These are the warehouse parts. The table below them is what customers would be told. Switch between the naive method and the shared parts pool, then place orders or run the Monday rush.</p></div>
+  <div class="row">
+    <div class="modes" role="group" aria-label="Calculation method">
+      <button id="mNaive" aria-pressed="false">Naive: each SKU counted alone</button>
+      <button id="mShared" aria-pressed="true">Shared parts pool</button>
+    </div>
+    <button class="btn primary" id="rush">Run the Monday rush</button>
+    <button class="btn" id="reset">Reset</button>
+  </div>
+  <div id="banner"></div>
+  <div class="grid2">
+    <div class="box min0"><div class="row" style="justify-content:space-between"><h3>Parts in the warehouse (D365 SCM)</h3><span class="note">Edit QC hold to test</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Part</th><th class="num">On hand</th><th class="num">Reserved</th><th class="num">QC hold</th><th class="num">Buffer</th><th class="num">Ordered here</th><th class="num">Free</th></tr></thead>
+        <tbody id="compRows"></tbody>
+      </table></div></div>
+    <div class="box min0"><h3>What customers are told</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>SKU</th><th>Type</th><th class="num">Available</th><th>Limited by</th></tr></thead>
+        <tbody id="skuRows"></tbody>
+      </table></div>
+      <div class="bigsum" style="margin-top:14px">
+        <div><span class="label">Printers customers can lock in</span><span class="v" id="shownPrinters">0</span></div>
+        <div><span class="label">Printers physically free</span><span class="v" id="realPrinters">0</span></div>
+      </div></div>
+  </div>
+  <div class="grid2">
+    <div class="box min0"><h3>Place an order</h3>
+      <div class="row" style="margin-top:10px">
+        <select id="oCust" aria-label="Customer"></select>
+        <select id="oSku" aria-label="SKU"></select>
+        <input type="number" id="oQty" value="5" min="1" aria-label="Quantity">
+        <button class="btn primary" id="oGo">Submit order</button>
+      </div>
+      <p class="note" style="margin-top:8px">In the shared pool, every order takes a soft reservation on its parts first. In naive mode, each SKU only checks its own number.</p></div>
+    <div class="box min0"><h3>Behind the scenes</h3><div class="log" id="log" aria-live="polite"></div></div>
+  </div>
+</section>
+
+<!-- 4 VISIBILITY -->
+<section class="panel" data-view="visibility" hidden>
+  <div class="intro"><span class="label">Access rules</span><h2>Who sees what</h2>
+  <p>The same numbers from the engine tab, rendered through the rules each user type gets. Switch the viewer to see the portal change.</p></div>
+  <div class="row"><span class="label">View the portal as</span><select id="viewAs" aria-label="View as"></select></div>
+  <div class="grid2">
+    <div class="box min0"><h3 id="portalTitle">Partner portal</h3><p class="note" id="portalSub"></p>
+      <div class="scroll" style="margin-top:8px"><table><thead id="portalHead"></thead><tbody id="portalRows"></tbody></table></div>
+      <h3 style="margin-top:16px">Orders this user can see</h3>
+      <div class="scroll"><table><thead><tr><th>Customer</th><th>SKU</th><th class="num">Qty</th><th>Status</th></tr></thead><tbody id="portalOrders"></tbody></table></div>
+    </div>
+    <div class="box min0"><h3>Rules table (Dataverse)</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>User type</th><th>Quantities</th><th>Inbound dates</th><th>Orders visible</th><th>Can order</th></tr></thead>
+        <tbody>
+          <tr><td>Distributor buyer</td><td>Exact, shared pool</td><td>Yes</td><td>Own company</td><td>Yes</td></tr>
+          <tr><td>Reseller</td><td>Bands only</td><td>No</td><td>None</td><td>Through distributor</td></tr>
+          <tr><td>Internal ops</td><td>Full breakdown</td><td>Yes</td><td>All</td><td>Override</td></tr>
+        </tbody></table></div>
+      <p class="note" style="margin-top:10px">Bands for resellers: 0 is Out of stock, 1 to 10 is Limited, above 10 is In stock. Bands protect the numbers distributors negotiate on, and still tell a reseller whether to quote the job.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 EDI -->
+<section class="panel" data-view="edi" hidden>
+  <div class="intro"><span class="label">EDI feed</span><h2>The 846, generated from the same number</h2>
+  <p>This X12 004010 Inventory Inquiry/Advice is built live from the engine state. Hover or tap a segment to read what it carries.</p></div>
+  <div class="row"><span class="label">Trading partner</span><select id="ediPartner" aria-label="Trading partner"></select><button class="btn" id="copy846">Copy 846</button><span class="note" id="copyMsg"></span></div>
+  <div class="grid2">
+    <div class="receipt min0" id="x846"></div>
+    <div class="box min0"><h3 id="segTitle">Segment guide</h3><p id="segText" class="note" style="margin-top:6px">Select a segment on the left.</p>
+      <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Transaction</th><th>Direction</th><th>Role in this build</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">846</td><td>Kestrel → distributor</td><td>Availability every 15 minutes</td></tr>
+        <tr><td class="mono">850</td><td>Distributor → Kestrel</td><td>Order, triggers soft reservation</td></tr>
+        <tr><td class="mono">855</td><td>Kestrel → distributor</td><td>Accepted, partial, backordered lines</td></tr>
+        <tr><td class="mono">856</td><td>Kestrel → distributor</td><td>Ship notice</td></tr>
+        <tr><td class="mono">852</td><td>Distributor → Kestrel</td><td>Sell-through to resellers</td></tr>
+        <tr><td class="mono">997</td><td>Receiver → sender</td><td>File received and readable</td></tr>
+      </tbody></table></div></div>
+  </div>
+</section>
+
+<!-- 6 BUILD -->
+<section class="panel" data-view="build" hidden>
+  <div class="intro"><span class="label">Build pieces</span><h2>What actually gets configured</h2>
+  <p>Configuration and code for each layer of this build.</p></div>
+  <div class="cfg" id="cfgList"></div>
+</section>
+
+<!-- 7 PLAN -->
+<section class="panel" data-view="plan" hidden>
+  <div class="intro"><span class="label">Delivery</span><h2>Fourteen weeks, pilot first</h2>
+  <p>Discovery and the data definitions come before any build. The signed definitions document is the foundation for everything after it.</p></div>
+  <div class="box" id="phases"></div>
+</section>
+
+<!-- 8 TESTS -->
+<section class="panel" data-view="tests" hidden>
+  <div class="intro"><span class="label">Controls</span><h2>Test scenarios that run against the engine</h2>
+  <p>Each test builds a fresh copy of the warehouse data and checks one rule. These scenarios form the test plan before go-live.</p></div>
+  <div class="row"><button class="btn primary" id="runTests">Run all tests</button><span class="mono note" id="testSum"></span></div>
+  <div class="box" id="testList"></div>
+</section>
+
+</div></main>
+
+<script>
+/*ENGINE_START*/
+const COMP_SEED = {
+  BASE:{name:"KP-310 Base Printer",onHand:62,hard:14,qc:3,buffer:5,inbound:{qty:120,date:"2026-11-10"}},
+  ETH:{name:"Ethernet Interface Card",onHand:30,hard:6,qc:0,buffer:2,inbound:{qty:80,date:"2026-11-04"}},
+  CUT:{name:"Auto Cutter Module",onHand:18,hard:2,qc:4,buffer:2,inbound:{qty:40,date:"2026-11-18"}},
+  PSU:{name:"Power Supply 24V",onHand:140,hard:20,qc:0,buffer:10,inbound:null},
+  PAP:{name:"Thermal Paper Pack",onHand:400,hard:40,qc:0,buffer:20,inbound:null}
+};
+const SKUS = {
+  "KP-310-U":{name:"KP-310 Printer, USB",type:"Stocked",bom:{BASE:1},upc:"084512310014"},
+  "KP-310-E":{name:"KP-310 Printer, Ethernet",type:"Conversion",bom:{BASE:1,ETH:1},upc:"084512310021"},
+  "KP-RSB":{name:"Retail Starter Bundle",type:"Kit",bom:{BASE:1,ETH:1,PSU:1,PAP:1},upc:"084512390016"},
+  "KP-KDB":{name:"Kitchen Display Bundle",type:"Kit",bom:{BASE:1,CUT:1,PSU:1},upc:"084512390023"},
+  "ETH-CARD":{name:"Ethernet Card, spare",type:"Stocked",bom:{ETH:1},upc:"084512400012"}
+};
+const CUSTOMERS = {
+  NS:{name:"NorthStar Distribution",role:"distributor",channel:"EDI",isa:"NORTHSTARDIST"},
+  MS:{name:"Meridian Supply",role:"distributor",channel:"Portal",isa:"MERIDIANSUP"},
+  PN:{name:"Pinnacle POS Solutions",role:"reseller",parent:"NS"},
+  HR:{name:"Harbor Retail Tech",role:"reseller",parent:"MS"},
+  OPS:{name:"Kestrel Internal Ops",role:"internal"}
+};
+function makeState(){return {mode:"shared",comp:JSON.parse(JSON.stringify(COMP_SEED)),orders:[],seq:0};}
+function softOf(st,c){let s=0;for(const o of st.orders){const q=SKUS[o.sku].bom[c];if(q)s+=q*o.accepted;}return s;}
+function physFree(st,c){const p=st.comp[c];return Math.max(0,p.onHand-p.hard-p.qc-p.buffer);}
+function compFree(st,c){return Math.max(0,physFree(st,c)-softOf(st,c));}
+function sharedAvail(st,sku){let m=Infinity,lim=null;for(const [c,q] of Object.entries(SKUS[sku].bom)){const v=Math.floor(compFree(st,c)/q);if(v<m){m=v;lim=c;}}return {qty:m,limit:lim};}
+function naiveAvail(st,sku){/* each SKU computed from parts ignoring other SKUs' orders */let m=Infinity,lim=null;for(const [c,q] of Object.entries(SKUS[sku].bom)){const v=Math.floor(physFree(st,c)/q);if(v<m){m=v;lim=c;}}const own=st.orders.filter(o=>o.sku===sku).reduce((a,o)=>a+o.accepted,0);return {qty:Math.max(0,m-own),limit:lim};}
+function avail(st,sku){return st.mode==="shared"?sharedAvail(st,sku):naiveAvail(st,sku);}
+function nextDate(st,sku){const lim=sharedAvail(st,sku).limit;const ib=st.comp[lim].inbound;return ib?ib.date:null;}
+function placeOrder(st,cust,sku,qty){qty=Math.max(0,Math.floor(qty));const a=avail(st,sku).qty;const accepted=Math.min(qty,a);const o={id:++st.seq,cust,sku,qty,accepted,back:qty-accepted,mode:st.mode};st.orders.push(o);return o;}
+function overcommit(st){const out=[];for(const c of Object.keys(st.comp)){const d=softOf(st,c),f=physFree(st,c);if(d>f)out.push({c,demand:d,free:f,short:d-f});}return out;}
+function band(q){return q<=0?"Out of stock":q<=10?"Limited":"In stock";}
+function portalView(st,role,sku){const a=sharedAvail(st,sku).qty;if(role==="reseller")return {show:band(a),qty:null};if(role==="distributor")return {show:String(a),qty:a,next:a===0?nextDate(st,sku):null};return {show:String(a),qty:a,detail:true};}
+function ordersVisible(st,custKey){const c=CUSTOMERS[custKey];if(c.role==="internal")return st.orders.slice();if(c.role==="distributor")return st.orders.filter(o=>o.cust===custKey);return [];}
+function pad(s,n){s=String(s);return (s+" ".repeat(n)).slice(0,n);}
+function build846(st,custKey,when){const c=CUSTOMERS[custKey];const d=when||{yy:"261028",ymd:"20261028",hm:"0815"};const ctl="000000101";const segs=[];
+  segs.push(["ISA",`ISA*00*${pad("",10)}*00*${pad("",10)}*ZZ*${pad("KESTRELSYS",15)}*ZZ*${pad(c.isa||"PARTNER",15)}*${d.yy}*${d.hm}*U*00401*${ctl}*0*P*>`]);
+  segs.push(["GS",`GS*IB*KESTRELSYS*${c.isa||"PARTNER"}*${d.ymd}*${d.hm}*101*X*004010`]);
+  const body=[];body.push(["ST","ST*846*0001"]);body.push(["BIA",`BIA*00*MM*KST${d.ymd}${custKey}*${d.ymd}*${d.hm}`]);body.push(["DTM",`DTM*405*${d.ymd}*${d.hm}`]);
+  let n=0;for(const [k,s] of Object.entries(SKUS)){const a=sharedAvail(st,k).qty;n++;body.push(["LIN",`LIN*${n}*VP*${k}*UP*${s.upc}`]);body.push(["PID",`PID*F****${s.name.toUpperCase()}`]);body.push(["QTY",`QTY*33*${a}*EA`]);const lim=sharedAvail(st,k).limit;const ib=st.comp[lim].inbound;if(ib){body.push(["SCH",`SCH*${ib.qty}*EA****018*${ib.date.replace(/-/g,"")}`]);}}
+  body.push(["CTT",`CTT*${n}`]);body.push(["SE",`SE*${body.length+1}*0001`]);
+  return segs.concat(body,[["GE","GE*1*101"],["IEA",`IEA*1*${ctl}`]]);}
+/*ENGINE_END*/
+
+/* ---------- content ---------- */
+const TABS=[["pitch","Overview"],["architecture","Architecture"],["stack","Application stack"],["engine","Live engine"],["visibility","Who sees what"],["edi","EDI 846"],["build","Build pieces"],["plan","Delivery plan"],["tests","Tests"]];
+const STACK=[
+ ["Source of truth","Dynamics 365 Supply Chain Management with Warehouse Management","Holds on hand, reservations, QC blocking and BOMs. The build extends it rather than adding a second inventory system."],
+ ["Availability","Inventory Visibility add-in","Near real-time on-hand service with calculated measures, soft reservations and available to promise. Included with a Supply Chain Management license."],
+ ["Kit math","Azure Function (kit availability service)","Inventory Visibility tracks items, not BOM math. A small function turns shared part counts into bundle counts."],
+ ["Rules","Dataverse tables","Partner tiers, user types and band thresholds in one place, read by every outlet."],
+ ["EDI","Logic Apps or Power Automate plus an EDI provider (SPS Commerce, TrueCommerce, or Data Masons EDI for Dynamics 365)","Builds the 846 on a schedule, receives 850s, returns 855s and 997s over AS2 or a VAN."],
+ ["Portal","Power Pages","Web roles and table permissions enforce who sees what, on top of Dataverse."],
+ ["Identity","Microsoft Entra External ID","Customer logins tied to an account and user type, with sign-in policies managed by IT."],
+ ["Reporting","Power BI with row-level security","Fill rate, backorders, 846 feed health and sell-through from the 852."],
+ ["Operations","Azure Monitor alerts","Alerts when an 846 is late, a 997 is rejected or a soft reservation fails repeatedly."]
+];
+const QA=[
+ ["What is real time here, honestly?","Inventory Visibility updates near real time from D365 events. The portal reads it live. The 846 goes on a schedule each partner agrees to, usually every 15 to 60 minutes. Orders are protected either way because every order checks and reserves at the moment it arrives."],
+ ["Why not let customers read the ERP directly?","Security and consistency. The ERP holds costs, other customers' orders and stock on hold. One calculated measure behind a rules table is safer and gives every channel the same answer."],
+ ["How do you stop two customers buying the last unit?","Soft reservations. The first order reserves the unit in Inventory Visibility, so the second check sees zero and is backordered with the next available date."],
+ ["How do you handle kits?","Kits never have their own stock number. Their availability is the lowest count the parts can make, from one shared pool, and an order reserves the parts immediately."],
+ ["What if you are not on Supply Chain Management?","On Business Central the design is the same. The availability calculation moves into the Azure service using the Business Central APIs, and Power Pages and Power BI stay the same."],
+ ["What would you need from us first?","SKU and BOM lists, warehouse and hold statuses, the list of distributors and how they want data, and the current EDI provider details."]
+];
+const ARCH=[
+ {lane:"1 · Sources",nodes:[
+  {id:"scm",t:"D365 Supply Chain Mgmt",s:"On hand, reservations, BOMs",core:false,what:"System of record for items, on-hand quantities, hard reservations, QC blocking and bills of materials.",why:"Kestrel's system of record. Extending it avoids a second inventory system.",own:"IT and operations"},
+  {id:"wms",t:"Warehouse Management",s:"Picks, receipts, holds",what:"Feeds receipts, picks and inventory status changes (for example QC hold) into on-hand.",why:"Status changes must reach the availability number within minutes.",own:"Warehouse team"},
+  {id:"bom",t:"BOM and kit master",s:"Which parts make which SKU",what:"Defines each kit and conversion as a list of component SKUs and quantities.",why:"This is the input that prevents double counting.",own:"Product and operations"}]},
+ {lane:"2 · Availability",nodes:[
+  {id:"iv",t:"Inventory Visibility add-in",s:"Shareable available, soft reservations, ATP",core:true,what:"Holds a calculated measure: on hand minus reservations, holds, soft reservations and buffer. Accepts soft reservations from every channel and projects available to promise from inbound supply.",why:"Built for exactly this job, scales to high update volumes, and comes with a Supply Chain Management license.",own:"Integration lead (this role)"},
+  {id:"kit",t:"Kit availability service",s:"Azure Function",core:true,what:"Reads free part counts from Inventory Visibility and returns bundle counts as the lowest count any part allows. Writes kit soft reservations as part reservations.",why:"Keeps BOM math in one tested place instead of in every channel.",own:"Integration lead"}]},
+ {lane:"3 · Rules",nodes:[
+  {id:"dv",t:"Dataverse rules tables",s:"Tiers, user types, bands",core:true,what:"Partner accounts, their parent distributor, user type, visibility level and band thresholds.",why:"One place to change who sees what, read by portal, EDI and reporting.",own:"Customer service with IT"},
+  {id:"id",t:"Entra External ID",s:"Partner logins",what:"Signs in distributor and reseller users and links each login to its account and user type in Dataverse.",why:"The rules only work if every user is reliably identified. Offboarding a reseller is one switch.",own:"IT security"}]},
+ {lane:"4 · Outlets",nodes:[
+  {id:"edi",t:"EDI 846 / 850 / 855",s:"Logic Apps + EDI provider",what:"Builds the 846 per distributor on a schedule. Receives 850 orders, soft reserves, returns 855 acknowledgments.",why:"Large distributors want data inside their own systems, not a website.",own:"EDI team"},
+  {id:"pp",t:"Partner portal",s:"Power Pages",what:"Stock checks and ordering for distributors, banded stock for resellers, with web roles and table permissions.",why:"Covers every partner without EDI, especially resellers.",own:"IT"},
+  {id:"pbi",t:"Power BI",s:"Row-level security",what:"Fill rate, backorders, 846 health and sell-through. Each user only sees their rows.",why:"Proves the project is working and catches feed problems early.",own:"Accounting and IT"}]}
+];
+const SEGS={ISA:"Interchange envelope. Sender KESTRELSYS, receiver is the distributor's ID, date, time and control number 000000101.",GS:"Functional group. IB is the code for an 846 Inventory Inquiry/Advice group.",ST:"Start of the 846 transaction set.",BIA:"Beginning segment. 00 is an original, MM is the report type code, then a unique reference, date and time.",DTM:"Date and time the availability was calculated.",LIN:"One item. VP is the vendor part number, UP is the UPC.",PID:"Product description, free form.",QTY:"Quantity. Code 33 means quantity available for sale. This comes from the shared parts pool, the same number the portal shows.",SCH:"Schedule of future availability: inbound quantity and the date it becomes available (code 018), from available to promise.",CTT:"Count of line items, a control check.",SE:"End of transaction, with the segment count.",GE:"End of functional group.",IEA:"End of interchange, repeats the control number."};
+const CFG=[
+ {t:"Inventory Visibility calculated measure",n:"Set in the Inventory Visibility app (Power Apps). The formula below is your signed-off definition of available.",code:`Data source: fno   (synced from D365 SCM)
+  Physical measures: AvailPhysical, ReservPhysical, Blocked
+Data source: iv    (Inventory Visibility)
+  Physical measures: SoftReservPhysical
+Data source: kst   (custom)
+  Physical measures: SafetyBuffer
+
+Calculated measure: iv.ShareableAvailable
+  = fno.AvailPhysical
+  - fno.Blocked            // QC hold
+  - iv.SoftReservPhysical  // portal and EDI orders
+  - kst.SafetyBuffer
+
+Soft reservation validated against: iv.ShareableAvailable
+Available to promise: on, schedule period 7 days`},
+ {t:"On-hand query from the kit service",n:"Request the kit service sends to the Inventory Visibility on-hand query API.",code:`POST /api/environment/{environmentId}/onhand/indexquery
+{
+  "filters": {
+    "organizationId": ["KST"],
+    "productId": ["BASE-310", "ETH-IF", "CUT-80", "PSU-24", "PAP-80"],
+    "siteId": ["TORR"],
+    "locationId": ["WH1"]
+  },
+  "groupByValues": ["productId"],
+  "returnNegative": false
+}`},
+ {t:"Kit availability service (Azure Function)",n:"The core rule in a few lines. Kits never get their own stock number.",code:`// bom = { "KP-RSB": { "BASE-310": 1, "ETH-IF": 1, "PSU-24": 1, "PAP-80": 1 } }
+function kitAvailable(sku, free) {
+  let best = Infinity, limitedBy = null;
+  for (const [part, perKit] of Object.entries(bom[sku])) {
+    const canMake = Math.floor((free[part] ?? 0) / perKit);
+    if (canMake < best) { best = canMake; limitedBy = part; }
+  }
+  return { sku, available: best, limitedBy };
+}
+
+// Ordering a kit reserves its parts, never "the kit"
+async function reserveKit(sku, qty, orderRef) {
+  const lines = Object.entries(bom[sku])
+    .map(([part, perKit]) => ({ productId: part, quantity: perKit * qty }));
+  return iv.softReserve(lines, { all: true, ref: orderRef }); // all parts or none
+}`},
+ {t:"Dataverse rules table",n:"One row per partner account. Portal, EDI and Power BI all read it.",code:`Table: kst_partnervisibility
+  kst_account          Lookup (Account)        NorthStar Distribution
+  kst_parentaccount    Lookup (Account)        (blank for distributors)
+  kst_usertype         Choice                  Distributor | Reseller | Internal
+  kst_quantitylevel    Choice                  Exact | Band | Full
+  kst_showinbound      Yes/No                  Yes
+  kst_bandlimited      Whole number            10
+  kst_ediprofile       Text                    NORTHSTARDIST / 846 every 15 min`},
+ {t:"Power Pages table permissions",n:"Resellers read the banded view only. Distributors read their own orders.",code:`Web role: Distributor Buyer
+  Table: kst_availability_exact   Scope: Global   Read
+  Table: salesorder               Scope: Account  Read, Create
+Web role: Reseller
+  Table: kst_availability_band    Scope: Global   Read
+  (no access to kst_availability_exact or salesorder)
+Web role: Internal Ops
+  Table: all availability views   Scope: Global   Read`},
+ {t:"846 schedule (Logic Apps)",n:"Same calculated measure as the portal, mapped to X12 and sent through the EDI provider.",code:`Trigger: Recurrence, every 15 minutes
+1. For each distributor where kst_ediprofile contains "846"
+2.   Call kit service  → availability for all SKUs
+3.   Map to X12 004010 846 (LIN, PID, QTY*33, SCH)
+4.   Send via AS2 / VAN connector to partner
+5.   Wait for 997; if missing after 30 min → alert
+6.   Log run: partner, SKUs, sent time, 997 status`},
+ {t:"Power BI row-level security (DAX)",n:"Distributors see only their own rows; internal users see all.",code:`[CustomerAccount] =
+LOOKUPVALUE (
+    Users[CustomerAccount],
+    Users[UserPrincipalName], USERPRINCIPALNAME ()
+)
+|| LOOKUPVALUE (
+    Users[UserType],
+    Users[UserPrincipalName], USERPRINCIPALNAME ()
+) = "Internal"`}
+];
+const PHASES=[
+ {w:"Weeks 1 to 3",t:"Discovery",s:0,e:3,items:["Map where availability comes from today and where it goes wrong","Collect SKU, BOM, warehouse and hold status lists","List every distributor and how they want data","Review current EDI provider and partners"],out:"Current state map and problem list"},
+ {w:"Weeks 3 to 4",t:"Data definitions",s:2,e:4,items:["Write the definition of shareable available","Write kit and conversion rules","Agree buffers and band thresholds"],out:"Signed data definitions document"},
+ {w:"Weeks 4 to 7",t:"Availability engine",s:3,e:7,items:["Configure Inventory Visibility measures and soft reservations","Build the kit availability service","Turn on available to promise for inbound"],out:"Engine returning trusted numbers in test"},
+ {w:"Weeks 6 to 8",t:"Access model",s:5,e:8,items:["Build the Dataverse rules tables","Define web roles and table permissions","Set Power BI row-level security"],out:"Approved visibility matrix"},
+ {w:"Weeks 7 to 10",t:"EDI feeds",s:6,e:10,items:["Map and test 846 per distributor","Connect 850 to soft reservation, return 855","Set 997 monitoring and alerts"],out:"846 live in test with one partner"},
+ {w:"Weeks 8 to 12",t:"Portal and reporting",s:7,e:12,items:["Build Power Pages stock check and ordering","Build fill rate and feed health reports"],out:"Portal and reports in user testing"},
+ {w:"Weeks 11 to 14",t:"Controls and pilot",s:10,e:14,items:["Run the test scenarios","Pilot one distributor and three resellers","Measure fill rate and backorders, then roll out"],out:"Go-live decision"}
+];
+
+const CATS=[
+ ["ERP","Items, stock, orders, BOMs","Dynamics 365 SCM or Business Central, SAP S/4HANA or Business One, Oracle NetSuite, Epicor, Infor, Sage X3, Acumatica"],
+ ["WMS","Picks, receipts, bins, QC holds","Dynamics 365 Warehouse Management, SAP EWM, NetSuite WMS, Manhattan, Blue Yonder, Körber, or a 3PL system"],
+ ["Availability layer","One trusted available number, kits, ATP","Dynamics 365 Inventory Visibility, SAP Advanced ATP, NetSuite ATP, or a custom service on Azure Functions or AWS Lambda"],
+ ["EDI provider","846, 850, 855, 856, 810, 997","SPS Commerce, TrueCommerce, Cleo, OpenText, IBM Sterling, Data Masons, Orderful, Kleinschmidt"],
+ ["Integration","Moves data on a schedule or event","Azure Logic Apps, Power Automate, MuleSoft, Boomi, Celigo, Jitterbit, SAP Integration Suite"],
+ ["Customer portal","Stock checks and ordering","Power Pages, Dynamics 365 Commerce B2B, Salesforce B2B Commerce, SAP Commerce Cloud, SuiteCommerce, Shopify B2B, OroCommerce, Sana Commerce"],
+ ["Rules store","Who sees what","Dataverse, Azure SQL, NetSuite custom records, SAP BTP tables, or tables in the ERP"],
+ ["Identity","Partner logins and user types","Microsoft Entra External ID, Okta, SAP Cloud Identity Services"],
+ ["BI and reporting","Fill rate, backorders, feed health","Power BI, Tableau, Looker, SAP Analytics Cloud, NetSuite Analytics Warehouse"],
+ ["Monitoring","Alerts when a feed fails","Azure Monitor, Datadog, Celigo error management, SAP Cloud ALM, EDI provider alerts"]
+];
+const STACKS={
+ ms:{label:"Dynamics 365 SCM",title:"Microsoft stack, Dynamics 365 Supply Chain Management",note:"The stack used in this build. Strongest native fit, because Inventory Visibility already does soft reservations and ATP.",rows:[
+  ["Dynamics 365 Supply Chain Management","N","System of record for stock, reservations and BOMs"],
+  ["Dynamics 365 Warehouse Management","N","Receipts, picks and QC holds flow into on hand"],
+  ["Inventory Visibility add-in + Azure Function","C","Shareable available measure, soft reservations; function does kit math"],
+  ["SPS Commerce, TrueCommerce or Data Masons","C","Maps and sends 846, receives 850, returns 855 and 997"],
+  ["Azure Logic Apps or Power Automate","C","Runs the 846 schedule and order flow"],
+  ["Power Pages","C","Distributor and reseller portal"],
+  ["Dataverse","C","Partner tiers, user types, band thresholds"],
+  ["Entra External ID","C","Partner sign-in linked to account and user type"],
+  ["Power BI","C","Fill rate, backorders, feed health with row-level security"],
+  ["Azure Monitor","C","Late 846, rejected 997, repeated reservation failures"]]},
+ bc:{label:"Dynamics 365 BC",title:"Microsoft stack, Dynamics 365 Business Central",note:"Same design. Business Central has no Inventory Visibility add-in, so the availability layer moves into a small Azure service using the Business Central APIs.",rows:[
+  ["Dynamics 365 Business Central","N","System of record for stock, assembly BOMs and orders"],
+  ["Business Central warehouse or a 3PL","N","Receipts, picks and holds"],
+  ["Azure Functions + Azure SQL","X","Calculates shareable available, kits and soft reservations"],
+  ["SPS Commerce or TrueCommerce","C","846, 850, 855 and 997 with Business Central connectors"],
+  ["Power Automate or Logic Apps","C","Order flow and 846 schedule"],
+  ["Power Pages","C","Distributor and reseller portal"],
+  ["Dataverse","C","Partner tiers and visibility rules"],
+  ["Entra External ID","C","Partner sign-in"],
+  ["Power BI","C","Reporting with row-level security"],
+  ["Azure Monitor","C","Feed and reservation alerts"]]},
+ ns:{label:"NetSuite",title:"Oracle NetSuite stack",note:"Same design. NetSuite has kit and assembly items natively; the shared pool rule and soft reservation logic go into SuiteScript.",rows:[
+  ["Oracle NetSuite ERP","N","System of record, kit and assembly items"],
+  ["NetSuite WMS","N","Receipts, picks and holds"],
+  ["NetSuite ATP + SuiteScript service","X","Shareable available, kit math and reservation checks"],
+  ["SPS Commerce","C","Common NetSuite EDI partner for 846, 850, 855, 997"],
+  ["Celigo","C","Integration flows and error handling"],
+  ["SuiteCommerce (B2B) or Customer Center","C","Distributor and reseller portal"],
+  ["NetSuite custom records","C","Partner tiers and visibility rules"],
+  ["NetSuite roles or Okta","C","Partner sign-in"],
+  ["NetSuite Analytics Warehouse or Power BI","C","Fill rate, backorders, feed health"],
+  ["Celigo error management + SPS alerts","C","Feed failure alerts"]]},
+ sap:{label:"SAP S/4HANA",title:"SAP stack, S/4HANA",note:"Same design. SAP Advanced ATP is very capable but heavy to configure; a small BTP service may still handle the reseller bands.",rows:[
+  ["SAP S/4HANA","N","System of record, BOMs and sales orders"],
+  ["SAP Extended Warehouse Management","N","Receipts, picks and stock types such as QC"],
+  ["SAP Advanced ATP","C","Availability checks, allocation and product substitution"],
+  ["OpenText or SPS Commerce","C","846, 850, 855 and 997 through IDoc mapping"],
+  ["SAP Integration Suite","C","Integration flows"],
+  ["SAP Commerce Cloud B2B","C","Distributor and reseller portal"],
+  ["SAP BTP tables","X","Partner tiers and visibility rules"],
+  ["SAP Cloud Identity Services","C","Partner sign-in"],
+  ["SAP Analytics Cloud","C","Reporting by partner"],
+  ["SAP Cloud ALM","C","Interface monitoring and alerts"]]}
+};
+const FIT={N:["good","Native"],C:["info","Configure"],X:["warn","Custom"]};
+let stackKey="ms";
+function renderStack(){
+ $("stackPick").innerHTML=Object.entries(STACKS).map(([k,s])=>`<button data-k="${k}" aria-pressed="${k===stackKey}">${s.label}</button>`).join("");
+ const s=STACKS[stackKey];$("stackTitle").textContent=s.title;$("stackNote").textContent=s.note;
+ const cnt={N:0,C:0,X:0};s.rows.forEach(r=>cnt[r[1]]++);
+ $("stackFit").textContent=`${cnt.N} native, ${cnt.C} configured, ${cnt.X} custom`;
+ $("stackPickRows").innerHTML=s.rows.map((r,i)=>`<tr><td>${CATS[i][0]}</td><td><b>${r[0]}</b></td><td><span class="pill ${FIT[r[1]][0]}">${FIT[r[1]][1]}</span></td><td>${r[2]}</td></tr>`).join("");
+}
+
+/* ---------- tests ---------- */
+const TESTS=[
+ ["Last unit race","Two customers order the last free printer at the same moment.","Soft reservation gives it to the first order only.",()=>{const s=makeState();s.comp.BASE.onHand=s.comp.BASE.hard+s.comp.BASE.qc+s.comp.BASE.buffer+1;const a=placeOrder(s,"NS","KP-310-U",1),b=placeOrder(s,"MS","KP-310-U",1);return a.accepted===1&&b.accepted===0;}],
+ ["Kit and printer share parts","Selling 4 bundles must reduce plain printer availability by 4.","Kits draw from the shared pool.",()=>{const s=makeState();const before=sharedAvail(s,"KP-310-U").qty;placeOrder(s,"NS","KP-RSB",4);return sharedAvail(s,"KP-310-U").qty===before-4;}],
+ ["Kit limited by scarcest part","Bundle count equals the lowest count any part allows.","No bundle is offered without every part.",()=>{const s=makeState();const r=sharedAvail(s,"KP-KDB");return r.qty===compFree(s,"CUT")&&r.limit==="CUT";}],
+ ["QC hold removes stock at once","Putting 10 printers on QC hold drops availability by 10.","Held stock is never sold.",()=>{const s=makeState();const b=sharedAvail(s,"KP-310-U").qty;s.comp.BASE.qc+=10;return sharedAvail(s,"KP-310-U").qty===b-10;}],
+ ["Buffer never exposed","Shown availability never exceeds physical free minus buffer.","A small cushion absorbs counting errors.",()=>{const s=makeState();return Object.keys(SKUS).every(k=>Object.entries(SKUS[k].bom).every(([c,q])=>sharedAvail(s,k).qty*q<=s.comp[c].onHand-s.comp[c].hard-s.comp[c].qc-s.comp[c].buffer));}],
+ ["No overcommitment under load","After the Monday rush, total part demand never exceeds free stock.","Promises match the warehouse.",()=>{const s=makeState();rushOn(s);return overcommit(s).length===0;}],
+ ["Naive method fails the same load","The same rush in naive mode overcommits printers.","Shows why the shared pool matters.",()=>{const s=makeState();s.mode="naive";rushOn(s);return overcommit(s).some(x=>x.c==="BASE");}],
+ ["Resellers never see quantities","Every reseller view is a band, never a number.","Protects distributor pricing and allocations.",()=>{const s=makeState();return Object.keys(SKUS).every(k=>{const v=portalView(s,"reseller",k);return v.qty===null&&["Out of stock","Limited","In stock"].includes(v.show);});}],
+ ["Customers cannot see each other's orders","A distributor sees only its own orders; resellers see none.","Prevents unintended exposure.",()=>{const s=makeState();placeOrder(s,"NS","KP-310-U",2);placeOrder(s,"MS","KP-310-U",3);return ordersVisible(s,"NS").every(o=>o.cust==="NS")&&ordersVisible(s,"PN").length===0&&ordersVisible(s,"OPS").length===2;}],
+ ["846 matches the portal","QTY*33 for every SKU equals the distributor portal number.","EDI and portal can never disagree.",()=>{const s=makeState();placeOrder(s,"NS","KP-RSB",5);const segs=build846(s,"NS");const q=segs.filter(x=>x[0]==="QTY").map(x=>+x[1].split("*")[2]);return Object.keys(SKUS).every((k,i)=>q[i]===portalView(s,"distributor",k).qty);}]
+];
+function rushOn(s){placeOrder(s,"NS","KP-310-U",30);placeOrder(s,"MS","KP-RSB",15);placeOrder(s,"NS","KP-KDB",8);}
+
+/* ---------- UI ---------- */
+let ST=makeState();const LOG=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function log(msg){const t=new Date();LOG.unshift(`<div><span class="t">${t.toTimeString().slice(0,8)}</span> ${msg}</div>`);if(LOG.length>40)LOG.pop();$("log").innerHTML=LOG.join("")||'<div class="t">No activity yet.</div>';}
+
+function setTab(id){document.querySelectorAll("[data-view]").forEach(s=>s.hidden=s.dataset.view!==id);document.querySelectorAll("#tabbar button").forEach(b=>b.setAttribute("aria-selected",b.dataset.id===id));try{if(location.hash!=="#"+id)history.replaceState(null,"","#"+id);}catch(e){}if(id==="tests"&&!$("testList").dataset.ran)runTests();}
+function initTabs(){$("tabbar").innerHTML=TABS.map(([id,l],i)=>`<button role="tab" data-id="${id}" aria-selected="false"><span class="n">${i+1}</span>${l}</button>`).join("");$("tabbar").onclick=e=>{const b=e.target.closest("button");if(b)setTab(b.dataset.id);};const h=(location.hash||"").slice(1);setTab(TABS.some(t=>t[0]===h)?h:"pitch");window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(TABS.some(t=>t[0]===h))setTab(h);});}
+
+function renderStatic(){
+ $("stackRows").innerHTML=STACK.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td></tr>`).join("");
+ $("arch").innerHTML=ARCH.map((l,li)=>`<div class="lane l${li+1}"><span class="label">${l.lane}</span>${l.nodes.map(n=>`<button class="node${n.core?" core":""}" data-node="${n.id}" aria-pressed="false"><b>${n.t}</b><span>${n.s}</span></button>`).join("")}</div>`).join("");
+ $("arch").onclick=e=>{const b=e.target.closest(".node");if(b)showNode(b.dataset.node);};showNode("iv");
+ $("catRows").innerHTML=CATS.map(c=>`<tr><td><b>${c[0]}</b></td><td>${c[1]}</td><td>${c[2]}</td></tr>`).join("");
+ renderStack();$("stackPick").onclick=e=>{const b=e.target.closest("button");if(b){stackKey=b.dataset.k;renderStack();}};
+ $("cfgList").innerHTML=CFG.map(c=>`<div class="box cfg"><div class="head"><h3>${c.t}</h3><span class="note">${c.n}</span></div><pre class="code">${esc(c.code)}</pre></div>`).join("");
+ const max=14;$("phases").innerHTML=PHASES.map((p,pi)=>`<div class="phase"><div class="wk"><b>${p.t}</b>${p.w}</div><div><ul class="tight" style="margin:0">${p.items.map(i=>`<li>${i}</li>`).join("")}</ul><p class="note" style="margin-top:6px"><span class="pill info">Deliverable</span> ${p.out}</p><div class="gantt" aria-hidden="true"><i style="left:${p.s/max*100}%;width:${(p.e-p.s)/max*100}%;background:var(--l${pi%4+1})"></i></div></div></div>`).join("");
+ const opt=o=>Object.entries(o);
+ $("oCust").innerHTML=opt(CUSTOMERS).filter(([k,c])=>c.role==="distributor").map(([k,c])=>`<option value="${k}">${c.name} (${c.channel})</option>`).join("");
+ $("oSku").innerHTML=opt(SKUS).map(([k,s])=>`<option value="${k}">${k}, ${s.name}</option>`).join("");
+ $("viewAs").innerHTML=opt(CUSTOMERS).map(([k,c])=>`<option value="${k}">${c.name}, ${c.role}</option>`).join("");
+ $("ediPartner").innerHTML=opt(CUSTOMERS).filter(([k,c])=>c.role==="distributor").map(([k,c])=>`<option value="${k}">${c.name}</option>`).join("");
+ $("testList").innerHTML=TESTS.map((t,i)=>`<div class="test"><span class="idx">T${String(i+1).padStart(2,"0")}</span><div><b>${t[0]}</b><p>${t[1]}</p><p class="why">${t[2]}</p></div><span class="pill info" id="tr${i}">Not run</span></div>`).join("");
+}
+function showNode(id){let n;ARCH.forEach(l=>l.nodes.forEach(x=>{if(x.id===id)n=x;}));document.querySelectorAll(".node").forEach(b=>b.setAttribute("aria-pressed",b.dataset.node===id));$("archDetail").innerHTML=`<h3>${n.t}</h3><dl><dt>What it does</dt><dd>${n.what}</dd><dt>Why it is here</dt><dd>${n.why}</dd><dt>Owner</dt><dd>${n.own}</dd></dl>`;}
+
+function renderEngine(){
+ $("mNaive").setAttribute("aria-pressed",ST.mode==="naive");$("mShared").setAttribute("aria-pressed",ST.mode==="shared");
+ $("compRows").innerHTML=Object.entries(ST.comp).map(([k,c])=>{const soft=softOf(ST,k),phys=physFree(ST,k),free=phys-soft;return `<tr><td>${c.name}</td><td class="num">${c.onHand}</td><td class="num">${c.hard}</td><td class="num"><input type="number" min="0" id="qc_${k}" data-qc="${k}" value="${c.qc}" aria-label="QC hold for ${c.name}"></td><td class="num">${c.buffer}</td><td class="num">${soft}</td><td class="num">${free<0?`<span class="pill bad">${free}</span>`:free}</td></tr>`;}).join("");
+ let shown=0;
+ $("skuRows").innerHTML=Object.entries(SKUS).map(([k,s])=>{const a=avail(ST,k);if(s.bom.BASE)shown+=a.qty;const lim=ST.comp[a.limit].name;const tp=s.type==="Kit"?"warn":s.type==="Conversion"?"info":"good";return `<tr><td><b class="mono">${k}</b><div class="bom">${Object.entries(s.bom).map(([c,q])=>q+" × "+c).join(" + ")}</div></td><td><span class="pill ${tp}">${s.type}</span></td><td class="num">${a.qty}</td><td>${lim}</td></tr>`;}).join("");
+ const realFree=Math.max(0,physFree(ST,"BASE")-softOf(ST,"BASE"));const lockable=ST.mode==="naive"?shown:realFree;$("shownPrinters").textContent=lockable;$("realPrinters").textContent=realFree;$("shownPrinters").style.color=lockable>realFree?"var(--bad)":"var(--good)";
+ const oc=overcommit(ST);
+ if(oc.length){$("banner").innerHTML=`<div class="banner bad">Overcommitted: ${oc.map(o=>`${ST.comp[o.c].name}, promised ${o.demand}, only ${o.free} free (short ${o.short})`).join("; ")}. These orders become backorders.</div>`;}
+ else if(ST.mode==="naive"){$("banner").innerHTML=`<div class="banner bad">Naive method: customers are shown ${shown} printers across SKUs, but only ${physFree(ST,"BASE")-softOf(ST,"BASE")} physical printers are free. Place orders to see the damage.</div>`;}
+ else $("banner").innerHTML=`<div class="banner good">Shared parts pool: every SKU is calculated from the same free parts, and every order reserves parts first. Nothing is promised twice.</div>`;
+ renderPortal();render846();
+}
+function renderPortal(){
+ const ck=$("viewAs").value||"NS",c=CUSTOMERS[ck];
+ $("portalTitle").textContent=`Partner portal, signed in as ${c.name}`;
+ $("portalSub").textContent=c.role==="reseller"?`Reseller under ${CUSTOMERS[c.parent].name}. Stock bands only; orders go through the distributor.`:c.role==="distributor"?`Distributor buyer via ${c.channel}. Exact quantities and next available dates.`:"Internal view. Full breakdown, all customers.";
+ if(c.role==="internal"){$("portalHead").innerHTML=`<tr><th>SKU</th><th class="num">Available</th><th>Limited by</th><th>Next inbound</th></tr>`;$("portalRows").innerHTML=Object.keys(SKUS).map(k=>{const a=sharedAvail(ST,k);const ib=ST.comp[a.limit].inbound;return `<tr><td class="mono">${k}</td><td class="num">${a.qty}</td><td>${ST.comp[a.limit].name}</td><td class="mono">${ib?ib.qty+" on "+ib.date:"None"}</td></tr>`;}).join("");}
+ else if(c.role==="distributor"){$("portalHead").innerHTML=`<tr><th>SKU</th><th>Product</th><th class="num">Available</th><th>Next available</th></tr>`;$("portalRows").innerHTML=Object.entries(SKUS).map(([k,s])=>{const v=portalView(ST,"distributor",k);return `<tr><td class="mono">${k}</td><td>${s.name}</td><td class="num">${v.show}</td><td class="mono">${v.next||(v.qty>0?"Now":"")}</td></tr>`;}).join("");}
+ else{$("portalHead").innerHTML=`<tr><th>SKU</th><th>Product</th><th>Stock</th></tr>`;$("portalRows").innerHTML=Object.entries(SKUS).map(([k,s])=>{const v=portalView(ST,"reseller",k);const p=v.show==="In stock"?"good":v.show==="Limited"?"warn":"bad";return `<tr><td class="mono">${k}</td><td>${s.name}</td><td><span class="pill ${p}">${v.show}</span></td></tr>`;}).join("");}
+ const ov=ordersVisible(ST,ck);
+ $("portalOrders").innerHTML=ov.length?ov.map(o=>`<tr><td>${CUSTOMERS[o.cust].name}</td><td class="mono">${o.sku}</td><td class="num">${o.qty}</td><td>${o.back?`<span class="pill warn">${o.accepted} accepted, ${o.back} backordered</span>`:`<span class="pill good">Accepted</span>`}</td></tr>`).join(""):`<tr><td colspan="4" class="note">${c.role==="reseller"?"Resellers cannot see orders in this portal.":"No orders yet. Place one on the Live engine tab."}</td></tr>`;
+}
+let segOn=-1;
+function render846(){const segs=build846(ST,$("ediPartner").value||"NS");$("x846").innerHTML=segs.map((s,i)=>`<span class="seg${i===segOn?" on":""}" data-i="${i}" data-id="${s[0]}" tabindex="0"><span class="id ${["ISA","GS","ST","SE","GE","IEA"].includes(s[0])?"env":"body"}">${esc(s[1].split("*")[0])}</span>${esc(s[1].slice(s[0].length))}~</span>`).join("");$("x846").dataset.text=segs.map(s=>s[1]+"~").join("\n");}
+function segInfo(el){if(!el)return;segOn=+el.dataset.i;document.querySelectorAll(".seg").forEach(s=>s.classList.toggle("on",+s.dataset.i===segOn));$("segTitle").textContent=el.dataset.id+" segment";$("segText").textContent=SEGS[el.dataset.id]||"";}
+
+function order(cust,sku,qty){const o=placeOrder(ST,cust,sku,qty);const c=CUSTOMERS[cust];const ch=c.channel==="EDI"?"EDI 850 received":"Portal order submitted";
+ log(`${ch}: ${c.name}, ${qty} × ${sku}`);
+ if(ST.mode==="shared"){log(`Inventory Visibility: soft reserve ${Object.entries(SKUS[sku].bom).map(([p,q])=>q*qty+" "+p).join(", ")}`);if(o.back){log(`<span style="color:var(--warn)">Partial: ${o.accepted} reserved, ${o.back} backordered, next available ${nextDate(ST,sku)||"TBD"}</span>`);}else log(`<span style="color:var(--good)">Reserved in full</span>`);}
+ else{log(`Naive check: ${sku} showed enough on its own line, accepted ${o.accepted}`);}
+ log(`D365: sales order SO-${String(4800+o.id)} created${c.channel==="EDI"?", EDI 855 queued":""}`);
+ renderEngine();}
+
+function runTests(){let p=0;TESTS.forEach((t,i)=>{let ok=false;try{ok=!!t[3]();}catch(e){ok=false;}if(ok)p++;const el=$("tr"+i);el.className="pill "+(ok?"good":"bad");el.textContent=ok?"Pass":"Fail";});$("testSum").textContent=`${p} of ${TESTS.length} passed`;$("testList").dataset.ran="1";}
+
+function wire(){
+ $("mNaive").onclick=()=>{ST.mode="naive";ST.orders=[];log("Switched to naive method, orders cleared");renderEngine();};
+ $("mShared").onclick=()=>{ST.mode="shared";ST.orders=[];log("Switched to shared parts pool, orders cleared");renderEngine();};
+ $("reset").onclick=()=>{const m=ST.mode;ST=makeState();ST.mode=m;LOG.length=0;log("Reset to opening stock");renderEngine();};
+ $("rush").onclick=()=>{const m=ST.mode;ST=makeState();ST.mode=m;log(`Monday rush in ${m==="shared"?"shared pool":"naive"} mode`);order("NS","KP-310-U",30);order("MS","KP-RSB",15);order("NS","KP-KDB",8);};
+ $("oGo").onclick=()=>{const q=+$("oQty").value;if(!(q>0)){log("Enter a quantity of 1 or more");return;}order($("oCust").value,$("oSku").value,q);};
+ $("compRows").addEventListener("change",e=>{const k=e.target.dataset.qc;if(!k)return;const v=Math.max(0,Math.floor(+e.target.value||0));ST.comp[k].qc=v;log(`Warehouse: QC hold on ${ST.comp[k].name} set to ${v}`);renderEngine();});
+ $("viewAs").onchange=renderPortal;$("ediPartner").onchange=render846;
+ $("x846").addEventListener("mouseover",e=>segInfo(e.target.closest(".seg")));$("x846").addEventListener("click",e=>segInfo(e.target.closest(".seg")));$("x846").addEventListener("focusin",e=>segInfo(e.target.closest(".seg")));
+ $("copy846").onclick=()=>{const t=$("x846").dataset.text;const done=m=>$("copyMsg").textContent=m;try{navigator.clipboard.writeText(t).then(()=>done("Copied"),()=>{selectReceipt();done("Selected, press copy");});}catch(e){selectReceipt();done("Selected, press copy");}};
+ $("runTests").onclick=runTests;
+}
+function selectReceipt(){const r=document.createRange();r.selectNodeContents($("x846"));const s=getSelection();s.removeAllRanges();s.addRange(r);}
+
+renderStatic();wire();initTabs();log("Opening stock loaded from D365 SCM");renderEngine();
+</script>
+
+</body>
+</html>
