@@ -95,9 +95,9 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabu
 .pill.bad{background:var(--bad-soft);color:var(--bad)}
 .pill.info{background:var(--accent-soft);color:var(--accent)}
 
-button.btn{font-family:var(--display);font-weight:600;font-size:.9rem;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);padding:7px 14px;border-radius:4px;cursor:pointer}
-button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
-button.btn:hover{border-color:var(--accent)}
+button.btn,a.btn{display:inline-block;text-decoration:none;font-family:var(--display);font-weight:600;font-size:.9rem;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);padding:7px 14px;border-radius:4px;cursor:pointer}
+button.btn.primary,a.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+button.btn:hover,a.btn:hover{border-color:var(--accent)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 select,input[type=number]{font-family:var(--body);font-size:.9rem;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink)}
 input[type=number]{width:80px}
@@ -392,6 +392,14 @@ ul.tight li{margin:2px 0}
 </section>
 
 <!-- 8 TESTS -->
+<!-- POWER BI REPORT -->
+<section class="panel" data-view="powerbi" hidden>
+  <div class="intro"><span class="label">Reporting</span><h2>Power BI report on the same availability data</h2>
+  <p>The internal team, and later the distributors, see order volume, fill rate, backorder causes, sell-through from the 852, demand against inbound supply and 846 feed health. Row-level security applies the same visibility rules as the portal. Change "View as" inside the report to see what NorthStar, Meridian or Pinnacle would see.</p></div>
+  <div class="row"><a class="btn primary" href="powerbi.html" target="_blank" rel="noopener">Open the report full screen</a><span class="mono note">Illustrative data. Built as a web page that mirrors the Power BI model, measures and security roles.</span></div>
+  <div class="box" style="padding:0;overflow:hidden"><iframe src="powerbi.html" title="Kestrel Channel Analytics report" loading="lazy" style="display:block;width:100%;height:1500px;border:0"></iframe></div>
+</section>
+
 <section class="panel" data-view="tests" hidden>
   <div class="intro"><span class="label">Controls</span><h2>Test scenarios that run against the engine</h2>
   <p>Each test builds a fresh copy of the warehouse data and checks one rule. These scenarios form the test plan before go-live.</p></div>
@@ -448,7 +456,7 @@ function build846(st,custKey,when){const c=CUSTOMERS[custKey];const d=when||{yy:
 /*ENGINE_END*/
 
 /* ---------- content ---------- */
-const TABS=[["pitch","Overview"],["architecture","Architecture"],["stack","Application stack"],["engine","Live engine"],["visibility","Who sees what"],["edi","EDI 846"],["build","Build pieces"],["plan","Delivery plan"],["tests","Tests"]];
+const TABS=[["pitch","Overview"],["architecture","Architecture"],["stack","Application stack"],["engine","Live engine"],["visibility","Who sees what"],["edi","EDI 846"],["powerbi","Power BI report"],["build","Build pieces"],["plan","Delivery plan"],["tests","Tests"]];
 const STACK=[
  ["Source of truth","Dynamics 365 Supply Chain Management with Warehouse Management","Holds on hand, reservations, QC blocking and BOMs. The build extends it rather than adding a second inventory system."],
  ["Availability","Inventory Visibility add-in","Near real-time on-hand service with calculated measures, soft reservations and available to promise. Included with a Supply Chain Management license."],

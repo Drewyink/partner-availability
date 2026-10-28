@@ -14,13 +14,14 @@ The scenario uses fictional companies: Kestrel Printing Systems (manufacturer), 
 | Live engine | Naive per-SKU counting versus a shared parts pool for kits and conversions |
 | Who sees what | Distributor, reseller and internal views of the same numbers |
 | EDI 846 | An X12 004010 846 generated live from the engine |
+| Power BI report | Eight page report (volume, inventory, fill rate, sell-through, demand vs supply, EDI health, data model and security) with row-level security, in `powerbi.html` |
 | Build pieces | Configuration and code for each layer |
 | Delivery plan | Fourteen-week plan with a pilot |
 | Tests | Ten control tests that run against the engine |
 
 ## Run it
 
-It is a single self-contained file. Open `index.html` in any browser, or publish it with GitHub Pages:
+It is two self-contained files, `index.html` and `powerbi.html`, kept in the same folder. Open `index.html` in any browser, or publish it with GitHub Pages:
 
 1. Push this folder to a GitHub repository.
 2. Go to **Settings → Pages**.

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<title>Kestrel Channel Analytics</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a BI report shell. Dark report header, slicer bar, page list on the left, 12 column canvas of visuals on the right. Everything in the system UI sans, like the BI tools it imitates. */
+:root{
+  --page:#eceeef; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#7a7873; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --chrome:#1f2731; --chrome-ink:#f2f4f6; --chrome-2:#2c3642; --sel:#2a78d6; --sel-soft:#e4eefa;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+  --q1:#cde2fb; --q2:#9ec5f4; --q3:#6da7ec; --q4:#3987e5; --q5:#256abf;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-ink:#006300; --crit-ink:#b02a2a;
+  --ghost:.38;
+  --f:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#9a988f; --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+  --chrome:#141a21; --chrome-2:#222b35; --sel:#3987e5; --sel-soft:#1b2a3d;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --q1:#1b2d45; --q2:#1c4371; --q3:#1c5cab; --q4:#2a78d6; --q5:#5598e7;
+  --good-ink:#0ca30c; --crit-ink:#ee7b70; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#9a988f; --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+  --chrome:#141a21; --chrome-2:#222b35; --sel:#3987e5; --sel-soft:#1b2a3d;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --q1:#1b2d45; --q2:#1c4371; --q3:#1c5cab; --q4:#2a78d6; --q5:#5598e7;
+  --good-ink:#0ca30c; --crit-ink:#ee7b70; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--f);font-size:14px;line-height:1.45}
+button,select{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.shell{max-width:1440px;margin:0 auto;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px}
+.intro{display:grid;gap:4px}
+.intro b{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--sel)}
+.intro p{margin:0;color:var(--ink2);max-width:90ch}
+.report{border-radius:10px;overflow:hidden;border:1px solid var(--ring);background:var(--page)}
+.rhead{background:var(--chrome);color:var(--chrome-ink);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+.rhead h1{margin:0;font-size:17px;font-weight:600;letter-spacing:.01em;display:flex;gap:10px;align-items:center}
+.logo{width:18px;height:18px;display:inline-grid;grid-template-columns:repeat(3,1fr);gap:2px;align-items:end}
+.logo i{background:var(--chrome-ink);border-radius:1px}
+.rmeta{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:12.5px;opacity:.95}
+.rmeta select{background:var(--chrome-2);color:var(--chrome-ink);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:5px 8px}
+.slicers{background:var(--surface);border-bottom:1px solid var(--ring);padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end}
+.sl{display:grid;gap:3px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sl select{text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--ink);padding:6px 8px;border:1px solid var(--grid);border-radius:6px;background:var(--surface);min-width:150px}
+.sl select:disabled{opacity:.55}
+.seg{display:inline-flex;border:1px solid var(--grid);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:6px 11px;font-size:13.5px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--sel);color:#fff}
+.clear{border:0;background:none;color:var(--sel);cursor:pointer;font-size:13px;text-decoration:underline;padding:6px 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{font-size:12px;background:var(--sel-soft);color:var(--ink);border-radius:99px;padding:3px 10px}
+.body{display:grid;grid-template-columns:200px minmax(0,1fr)}
+.pages{background:var(--surface);border-right:1px solid var(--ring);padding:12px 8px;display:grid;gap:2px;align-content:start}
+.pages .ph{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:4px 10px 8px}
+.pg{border:0;background:transparent;text-align:left;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13.5px;color:var(--ink);display:flex;justify-content:space-between;gap:6px;align-items:center}
+.pg:hover{background:var(--sel-soft)}
+.pg[aria-current="page"]{background:var(--sel-soft);box-shadow:inset 3px 0 0 var(--sel);font-weight:600}
+.pg .lock{font-size:10.5px;color:var(--muted)}
+.pg:disabled{opacity:.45;cursor:not-allowed}
+.canvas{padding:14px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-content:start;min-width:0}
+.vis{grid-column:span 6;background:var(--surface);border:1px solid var(--ring);border-radius:8px;padding:12px 14px;display:grid;gap:8px;align-content:start;min-width:0}
+.span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-7{grid-column:span 7}.span-5{grid-column:span 5}.span-4{grid-column:span 4}.span-3{grid-column:span 3}.span-2{grid-column:span 2}
+.vis header{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.vis h3{margin:0;font-size:13.5px;font-weight:600}
+.vis .sub{font-size:12px;color:var(--muted)}
+.tt{border:1px solid var(--grid);background:transparent;border-radius:5px;font-size:11.5px;padding:2px 7px;cursor:pointer;color:var(--ink2);flex:none}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--f);fill:var(--muted);font-size:11px}
+svg .lbl{fill:var(--ink2)}
+svg .val{fill:var(--ink);font-weight:600}
+svg [data-xf]{cursor:pointer}
+.kpi{grid-column:span 2;background:var(--surface);border:1px solid var(--ring);border-radius:8px;padding:12px 14px;display:grid;gap:2px;min-width:0}
+.kpi .l{font-size:12px;color:var(--ink2)}
+.kpi .v{font-size:24px;font-weight:600;line-height:1.15}
+.kpi .d{font-size:12px;color:var(--muted)}
+.kpi .d b.up{color:var(--good-ink)} .kpi .d b.down{color:var(--crit-ink)}
+.tview,.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+th:first-child,td:first-child{text-align:left}
+td.n,th.n{font-variant-numeric:tabular-nums}
+td.heat{font-variant-numeric:tabular-nums}
+.st{display:inline-flex;gap:5px;align-items:center;font-size:12px}
+.st i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.narr{grid-column:span 12;background:var(--surface);border:1px solid var(--ring);border-radius:8px;padding:12px 14px;display:grid;gap:6px}
+.narr h3{margin:0;font-size:13.5px}
+.narr ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--ink2)}
+.banner{grid-column:span 12;border-radius:8px;padding:10px 14px;background:var(--sel-soft);font-size:13.5px}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--page);border-radius:6px;padding:10px;white-space:pre-wrap;overflow-x:auto;margin:0;color:var(--ink)}
+.notes{display:grid;gap:6px;font-size:13px;color:var(--ink2)}
+.notes p{margin:0}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--chrome);color:var(--chrome-ink);font-size:12px;line-height:1.45;padding:7px 10px;border-radius:6px;max-width:260px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+@media (max-width:1150px){.kpi{grid-column:span 4}.span-8,.span-7,.span-5,.span-4,.vis{grid-column:span 12}.span-3{grid-column:span 6}}
+@media (max-width:760px){.body{grid-template-columns:1fr}.pages{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--ring)}.pages .ph{display:none}.pg{white-space:nowrap}.kpi{grid-column:span 6}.span-3,.span-2{grid-column:span 12}.canvas{padding:10px}}
+</style>
+</head>
+<body>
+<nav class="backbar" style="font:13px system-ui,sans-serif;padding:8px max(16px,env(safe-area-inset-left,0px));background:#1f2731"><a href="./#powerbi" target="_top" style="color:#f2f4f6">Back to the solution</a></nav>
+
+
+<div class="shell">
+  <div class="intro">
+    <b>Demo report · illustrative data for Kestrel Printing Systems, a made up manufacturer</b>
+    <p>A Power BI style report built on the same data as the partner portal: orders (850), inventory, availability (846), sell through (852 and 867) and EDI acknowledgments (855 and 997). Click bars to cross filter, hover any mark for detail, press Table on any visual to see its numbers, and change "View as" to test row level security.</p>
+  </div>
+  <div class="report">
+    <div class="rhead">
+      <h1><span class="logo" aria-hidden="true"><i style="height:7px"></i><i style="height:12px"></i><i style="height:18px"></i></span>Kestrel Channel Analytics</h1>
+      <div class="rmeta">
+        <span id="refresh"></span>
+        <label for="role">View as (row level security)&nbsp;
+          <select id="role">
+            <option value="INT">Kestrel internal, all data</option>
+            <option value="NSD">NorthStar Distribution</option>
+            <option value="MER">Meridian Supply</option>
+            <option value="PIN">Pinnacle POS Solutions (reseller)</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="slicers" id="slicers"></div>
+    <div class="body">
+      <nav class="pages" id="pages" aria-label="Report pages"></nav>
+      <main class="canvas" id="canvas"></main>
+    </div>
+  </div>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+(function(){
+/* ================= Demo data ================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const rng = mulberry32(20261024);
+const NW = 26, LAUNCH = 14;
+const now = new Date(); const mon = new Date(now); mon.setHours(0,0,0,0); mon.setDate(mon.getDate()-((mon.getDay()+6)%7));
+const WEEKS = Array.from({length:NW},(_,i)=>{const d=new Date(mon); d.setDate(d.getDate()-(NW-1-i)*7); return {i, d, label:d.toLocaleDateString([], {month:"short", day:"numeric"})};});
+const FWEEKS = Array.from({length:8},(_,k)=>{const d=new Date(mon); d.setDate(d.getDate()+(k+1)*7); return d.toLocaleDateString([], {month:"short", day:"numeric"});});
+
+const DIST = [
+  {c:"NSD", n:"NorthStar Distribution", w:.36, lines:["POS","LABEL","KITCHEN"], col:"--s1"},
+  {c:"MER", n:"Meridian Supply", w:.24, lines:["POS","KITCHEN"], col:"--s2", edi:false},
+  {c:"CTS", n:"Coastal Tech Supply", w:.24, lines:["POS","LABEL","KITCHEN"], col:"--s3"},
+  {c:"SCP", n:"Summit Channel Partners", w:.16, lines:["POS","LABEL","KITCHEN"], col:"--s4"}
+];
+const LINES = [{c:"POS", n:"POS receipt", col:"--s1"},{c:"LABEL", n:"Label", col:"--s2"},{c:"KITCHEN", n:"Kitchen", col:"--s3"}];
+const WHS = [{c:"LA", n:"Los Angeles DC", share:.6},{c:"NJ", n:"Edison NJ DC", share:.4}];
+const SKU = [
+  {id:"P300-BASE", n:"P300 receipt printer, base", line:"POS", price:189, base:230},
+  {id:"P300-ENET", n:"P300 Ethernet model", line:"POS", price:239, base:180, kit:1},
+  {id:"P300-BT",   n:"P300 Bluetooth model", line:"POS", price:249, base:70, kit:1},
+  {id:"CARD-ENET", n:"Ethernet interface card", line:"POS", price:45, base:80},
+  {id:"CARD-BT",   n:"Bluetooth interface card", line:"POS", price:55, base:40},
+  {id:"L4-LBL",    n:"L4 desktop label printer", line:"LABEL", price:329, base:140},
+  {id:"K2-KTCH",   n:"K2 kitchen printer", line:"KITCHEN", price:279, base:60}
+];
+const CAUSES = [{c:"KIT", n:"Card or part short", col:"--s1"},{c:"QC", n:"QC hold", col:"--s2"},{c:"CTR", n:"Late container", col:"--s3"},{c:"STALE", n:"Stale stock data", col:"--s4"}];
+const RES = [
+  {c:"PIN", n:"Pinnacle POS Solutions", d:"NSD", reg:"West", sh:.40},
+  {c:"BRL", n:"Brightline Retail Systems", d:"NSD", reg:"Midwest", sh:.35},
+  {c:"BVP", n:"Bayview POS", d:"NSD", reg:"Northeast", sh:.25},
+  {c:"HRT", n:"Harbor Retail Tech", d:"MER", reg:"South", sh:.55},
+  {c:"LKT", n:"Lakeshore Tech", d:"MER", reg:"Midwest", sh:.45},
+  {c:"PPS", n:"Pacific Point of Sale", d:"CTS", reg:"West", sh:.60},
+  {c:"SBS", n:"Sunbelt Systems", d:"CTS", reg:"South", sh:.40},
+  {c:"GRT", n:"Granite Retail Tech", d:"SCP", reg:"South", sh:.70},
+  {c:"CRI", n:"Cascade Retail IT", d:"SCP", reg:"West", sh:.30}
+];
+const REGIONS = ["West","Midwest","Northeast","South"];
+
+function pick(weights){ let r=rng()*weights.reduce((a,b)=>a+b,0); for(let i=0;i<weights.length;i++){ r-=weights[i]; if(r<=0) return i; } return weights.length-1; }
+
+/* Orders: one row per week, distributor, SKU, warehouse */
+const ORD = [];
+for(let i=0;i<NW;i++){
+  const season = 1 + .10*Math.sin((i+3)/NW*2*Math.PI) + .012*i;
+  const post = i>=LAUNCH;
+  const portalShare = post ? Math.min(.55, .12 + (i-LAUNCH)*.04) : 0;
+  for(const d of DIST) for(const s of SKU){
+    if(!d.lines.includes(s.line)) continue;
+    for(const w of WHS){
+      const ord = Math.round(s.base*d.w*w.share*season*(.72+.56*rng()));
+      if(!ord) continue;
+      const portal = d.edi===false ? (post ? Math.min(ord, Math.round(ord*Math.min(.92,.35+(i-LAUNCH)*.1))) : 0) : Math.min(ord, Math.round(ord*portalShare*(.8+.4*rng())));
+      const manual = d.edi===false ? ord-portal : 0;
+      const boRate = (s.kit?.075:.03)*(post?.55:1.55)*(.4+1.2*rng());
+      const bo = Math.round(ord*boRate);
+      const late = Math.round((ord-bo)*(post?.025:.055)*(.3+1.4*rng()));
+      const cause = CAUSES[pick(post?[.42,.24,.30,.04]:[.30,.14,.20,.36])].c;
+      ORD.push({i, d:d.c, sku:s.id, line:s.line, wh:w.c, ord, portal, manual, edi:ord-portal-manual, bo, late, ontime:ord-bo-late, cause, rev:ord*s.price});
+    }
+  }
+}
+
+/* Kestrel inventory snapshot per SKU and warehouse */
+function avgW(sku, wh, n){ let t=0; ORD.forEach(r=>{ if(r.sku===sku && r.wh===wh && r.i>=NW-n) t+=r.ord; }); return t/n; }
+const SNAP = [];
+for(const s of SKU) for(const w of WHS){
+  const a = avgW(s.id, w.c, 8);
+  const oh = Math.round(a*(1.6+rng()*6.5));
+  const alloc = Math.round(a*.35*(.6+.8*rng()));
+  const hold = (s.id==="P300-BASE"&&w.c==="LA") ? 22 : (rng()<.25 ? Math.round(oh*.05) : 0);
+  const buffer = Math.ceil(oh*.05);
+  SNAP.push({sku:s.id, line:s.line, wh:w.c, avg:a, oh, alloc, hold, buffer, pub:Math.max(0, oh-alloc-hold-buffer)});
+}
+/* Weekly on hand trend per warehouse and line, scaled so the last week equals the snapshot */
+const OH = {};
+for(const w of WHS){ OH[w.c]={}; for(const l of LINES){
+  const ship = WEEKS.map(wk=>ORD.filter(r=>r.i===wk.i&&r.wh===w.c&&r.line===l.c).reduce((a,r)=>a+r.ontime+r.late,0));
+  const avg = ship.reduce((a,b)=>a+b,0)/NW; let cur = avg*5; const arr=[];
+  for(let i=0;i<NW;i++){ if((i+(w.c==="LA"?0:1)+(l.c==="LABEL"?1:0))%3===0) cur += 3*avg*(.85+.35*rng()); cur = Math.max(avg*.6, cur-ship[i]); arr.push(cur); }
+  const target = SNAP.filter(x=>x.wh===w.c&&x.line===l.c).reduce((a,x)=>a+x.oh,0);
+  const k = target/arr[NW-1]; OH[w.c][l.c] = arr.map(v=>Math.round(v*k));
+}}
+/* Inbound containers */
+const INB = [
+  {id:"KSCU 482113", sku:"P300-BASE", wh:"LA", eta:2, st:"On water"},
+  {id:"KSCU 482140", sku:"L4-LBL", wh:"NJ", eta:1, st:"At port"},
+  {id:"OOLU 771902", sku:"CARD-ENET", wh:"LA", eta:3, st:"Customs hold"},
+  {id:"KSCU 482201", sku:"P300-BASE", wh:"NJ", eta:4, st:"On water"},
+  {id:"MSKU 330418", sku:"K2-KTCH", wh:"LA", eta:5, st:"Booked"},
+  {id:"OOLU 771955", sku:"CARD-BT", wh:"LA", eta:6, st:"Booked"},
+  {id:"KSCU 482260", sku:"L4-LBL", wh:"LA", eta:7, st:"Booked"}
+].map(c=>({...c, qty:Math.round(avgW(c.sku,c.wh,8)*(3+rng()*1.5)/10)*10}));
+
+/* Sell through from distributors to resellers (852 and 867 data) */
+const SELLIN = {}; // [dist][line][i] units shipped to distributor
+for(const d of DIST){ SELLIN[d.c]={}; for(const l of LINES) SELLIN[d.c][l.c]=WEEKS.map(wk=>ORD.filter(r=>r.i===wk.i&&r.d===d.c&&r.line===l.c).reduce((a,r)=>a+r.ontime+r.late,0)); }
+const ST = [];
+for(let i=0;i<NW;i++) for(const r of RES) for(const l of LINES){
+  const src = SELLIN[r.d][l.c][Math.max(0,i-1)]; if(!src) continue;
+  ST.push({i, res:r.c, d:r.d, reg:r.reg, line:l.c, u:Math.round(src*r.sh*(.8+.22*rng()))});
+}
+const CHSTOCK = {}; // distributor stock per week (852)
+for(const d of DIST){ CHSTOCK[d.c]={}; for(const l of LINES){
+  const si = SELLIN[d.c][l.c]; const avg = si.reduce((a,b)=>a+b,0)/NW; let cur = avg*2.6; const arr=[];
+  for(let i=0;i<NW;i++){ const so = ST.filter(x=>x.i===i&&x.d===d.c&&x.line===l.c).reduce((a,x)=>a+x.u,0); cur = Math.max(0, cur+si[i]-so); arr.push(Math.round(cur)); }
+  CHSTOCK[d.c][l.c]=arr;
+}}
+
+/* EDI feed health */
+const EDI = [];
+for(let i=0;i<NW;i++) for(const d of DIST.filter(x=>x.edi!==false)){
+  let fail = rng()<.18 ? 1+Math.floor(rng()*3) : 0;
+  if(d.c==="SCP" && i===NW-6) fail = 41;
+  if(d.c==="MER" && i===9) fail = 14;
+  const ediOrders = Math.max(1, Math.round(ORD.filter(r=>r.i===i&&r.d===d.c).reduce((a,r)=>a+r.edi,0)/22));
+  EDI.push({i, d:d.c, sent:168, fail, ack:168-fail-(rng()<.3?1:0), o850:ediOrders, a855:Math.round(ediOrders*(i<LAUNCH?.9:.97)*(.97+.03*rng()))});
+}
+const INCIDENTS = [
+  {w:NW-6, d:"SCP", what:"846 rejected: partner changed its item qualifier from VP to BP without notice", fix:"Map updated, partner guide versioned", hrs:31},
+  {w:9, d:"CTS", what:"AS2 certificate expired, 846 and 855 queued", fix:"Certificate renewed, expiry alert added at 30 days", hrs:19},
+  {w:NW-2, d:"NSD", what:"997 acknowledgments delayed by partner VAN outage", fix:"No action needed, auto retry succeeded", hrs:4}
+];
+
+/* ================= State and filters ================= */
+const PAGES = [
+  {k:"overview", n:"Overview"},{k:"volume", n:"Order volume"},{k:"inventory", n:"Inventory"},{k:"fill", n:"Fill rate and backorders"},
+  {k:"sell", n:"Channel sell through"},{k:"demand", n:"Demand vs supply"},{k:"edi", n:"EDI feed health"},{k:"model", n:"Data model and security"}
+];
+const ROLES = {
+  INT:{n:"Kestrel internal", pages:PAGES.map(p=>p.k)},
+  NSD:{n:"NorthStar Distribution", dist:"NSD", pages:["overview","volume","fill","sell","edi"]},
+  MER:{n:"Meridian Supply", dist:"MER", pages:["overview","volume","fill","sell"]},
+  PIN:{n:"Pinnacle POS Solutions", res:"PIN", dist:"NSD", pages:["sell"]}
+};
+const P = {page:"overview", weeks:13, wh:"ALL", line:"ALL", dist:"ALL", role:"INT"};
+const R = () => ROLES[P.role];
+const distOK = d => R().dist ? d===R().dist : (P.dist==="ALL"||d===P.dist);
+const lineOK = l => P.line==="ALL"||l===P.line;
+const whOK = w => P.wh==="ALL"||w===P.wh;
+const range = () => WEEKS.slice(NW-P.weeks);
+const ordAll = () => ORD.filter(r=>distOK(r.d)&&lineOK(r.line)&&whOK(r.wh));
+const ordP = () => ordAll().filter(r=>r.i>=NW-P.weeks);
+const stAll = () => ST.filter(r=>(R().res ? r.res===R().res : distOK(r.d)) && lineOK(r.line));
+const sum = (a,f) => a.reduce((t,r)=>t+f(r),0);
+function byWeek(rows, f, all){ const ws = all?WEEKS:range(); const m = new Map(ws.map(w=>[w.i,0])); rows.forEach(r=>{ if(m.has(r.i)) m.set(r.i, m.get(r.i)+f(r)); }); return ws.map(w=>m.get(w.i)); }
+function by(rows, key, f){ const m={}; rows.forEach(r=>{ m[r[key]]=(m[r[key]]||0)+f(r); }); return m; }
+
+/* ================= Formatting ================= */
+const nf = new Intl.NumberFormat();
+const N = v => nf.format(Math.round(v));
+const $K = v => v>=1e6 ? "$"+(v/1e6).toFixed(2)+"M" : v>=1e3 ? "$"+(v/1e3).toFixed(0)+"K" : "$"+Math.round(v);
+const PC = (v,d=1) => (v*100).toFixed(d)+"%";
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const tipA = s => esc(s).replace(/\n/g,"&#10;");
+const C = v => `var(${v})`;
+
+/* ================= Chart primitives (SVG) ================= */
+const W = 640;
+function nice(max){ if(max<=0) return 1; const p = Math.pow(10, Math.floor(Math.log10(max))); const n = max/p; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p; }
+function topRound(x,y,w,h,r){ r=Math.min(r,w/2,h); if(h<=0) return ""; return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`; }
+function yAxis(max, x0, x1, y0, ph, fmt){ let g=""; for(let k=0;k<=4;k++){ const v=max*k/4, y=y0+ph-ph*k/4; g+=`<line x1="${x0}" x2="${x1}" y1="${y}" y2="${y}" style="stroke:${k?C("--grid"):C("--axis")}" stroke-width="1"/><text x="${x0-6}" y="${y+4}" text-anchor="end">${fmt(v)}</text>`; } return g; }
+function xLabels(labels, xs, y){ const step = Math.ceil(labels.length/8); return labels.map((l,i)=> (i%step===0||i===labels.length-1) && !(i!==labels.length-1 && labels.length-1-i<step && i%step===0 && i!==0 && false) ? `<text x="${xs(i)}" y="${y}" text-anchor="middle">${l}</text>` : "").join(""); }
+function legend(items){ return `<div class="legend">${items.map(s=>`<span><i style="background:${C(s.col)}"></i>${esc(s.n)}</span>`).join("")}</div>`; }
+
+function colChart(o){
+  const W=o.w||640, h=o.h||230, L=48, Rr=12, T=16, B=26, pw=W-L-Rr, ph=h-T-B, n=o.labels.length;
+  const tot = o.labels.map((_,i)=>sum(o.series,s=>s.values[i]));
+  const max = nice(Math.max(...tot, o.ref?o.ref.value:0)*1.05);
+  const bw = pw/n*.64, xs = i=>L+pw/n*(i+.5), ys = v=>T+ph-ph*v/max;
+  let g = yAxis(max, L, W-Rr, T, ph, o.yfmt||N);
+  o.labels.forEach((lab,i)=>{
+    let acc=0; const ghost = o.ghostFrom!=null && i>=o.ghostFrom;
+    o.series.forEach((s,si)=>{
+      const v=s.values[i]; if(v<=0) return;
+      const y=ys(acc+v), y2=ys(acc), top = si===o.series.length-1 || o.series.slice(si+1).every(t=>t.values[i]<=0);
+      const hh = Math.max(0, y2-y-(acc>0?2:0));
+      g += top ? `<path d="${topRound(xs(i)-bw/2, y, bw, hh, 4)}" style="fill:${C(s.col)};${ghost?"opacity:var(--ghost)":""}"/>` : `<rect x="${xs(i)-bw/2}" y="${y}" width="${bw}" height="${hh}" style="fill:${C(s.col)};${ghost?"opacity:var(--ghost)":""}"/>`;
+      acc+=v;
+    });
+    const tip = `${o.tipTitle?o.tipTitle(i):lab}\n` + o.series.map(s=>`${s.n}: ${(o.fmt||N)(s.values[i])}`).join("\n") + (o.series.length>1?`\nTotal: ${(o.fmt||N)(tot[i])}`:"");
+    g += `<rect x="${xs(i)-pw/n/2}" y="${T}" width="${pw/n}" height="${ph}" fill="transparent" data-tip="${tipA(tip)}"/>`;
+  });
+  if(o.ref){ const y=ys(o.ref.value); g+=`<line x1="${L}" x2="${W-Rr}" y1="${y}" y2="${y}" style="stroke:${C("--ink2")}" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-Rr}" y="${y-5}" text-anchor="end" class="lbl">${o.ref.label}</text>`; }
+  if(o.annot!=null && o.annot>=0 && o.annot<n){ const x=xs(o.annot)-pw/n/2; g+=`<line x1="${x}" x2="${x}" y1="${T-6}" y2="${T+ph}" style="stroke:${C("--ink2")}" stroke-dasharray="3 3"/><text x="${x+4}" y="${T+2}" class="lbl">${o.annotLabel}</text>`; }
+  g += xLabels(o.labels, xs, h-8);
+  return (o.series.length>1?legend(o.series):"") + `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.aria||"Column chart")}">${g}</svg>`;
+}
+
+function lineChart(o){
+  const W=o.w||640, h=o.h||230, L=48, Rr=o.series.length>1?132:16, T=16, B=26, pw=W-L-Rr, ph=h-T-B, n=o.labels.length;
+  const all = o.series.flatMap(s=>s.values).concat(o.ref?[o.ref.value]:[]);
+  const lo = o.min!=null?o.min:0, hi = o.max!=null?o.max:nice(Math.max(...all)*1.05);
+  const xs = i=>L+(n===1?pw/2:pw*i/(n-1)), ys = v=>T+ph-ph*(v-lo)/(hi-lo);
+  const fmt=o.fmt||N, yfmt=o.yfmt||fmt;
+  let g=""; for(let k=0;k<=4;k++){ const v=lo+(hi-lo)*k/4, y=T+ph-ph*k/4; g+=`<line x1="${L}" x2="${W-Rr}" y1="${y}" y2="${y}" style="stroke:${k?C("--grid"):C("--axis")}"/><text x="${L-6}" y="${y+4}" text-anchor="end">${yfmt(v)}</text>`; }
+  if(o.ref){ const y=ys(o.ref.value); g+=`<line x1="${L}" x2="${W-Rr}" y1="${y}" y2="${y}" style="stroke:${C("--ink2")}" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-Rr}" y="${y+14}" text-anchor="end" class="lbl">${o.ref.label}</text>`; }
+  if(o.annot!=null && o.annot>=0 && o.annot<n){ const x=xs(o.annot); g+=`<line x1="${x}" x2="${x}" y1="${T-6}" y2="${T+ph}" style="stroke:${C("--ink2")}" stroke-dasharray="3 3"/><text x="${x+4}" y="${T+2}" class="lbl">${o.annotLabel}</text>`; }
+  const ends=[];
+  o.series.forEach(s=>{
+    const pts = s.values.map((v,i)=>`${xs(i)},${ys(v)}`).join(" ");
+    g += `<polyline points="${pts}" fill="none" style="stroke:${C(s.col)}" stroke-width="2" stroke-linejoin="round" ${s.dash?'stroke-dasharray="6 4"':""}/>`;
+    const lv=s.values[n-1]; g+=`<circle cx="${xs(n-1)}" cy="${ys(lv)}" r="4" style="fill:${C(s.col)};stroke:${C("--surface")}" stroke-width="2"/>`;
+    ends.push({y:ys(lv), s, v:lv});
+  });
+  if(o.series.length>1){ ends.sort((a,b)=>a.y-b.y); for(let k=1;k<ends.length;k++) if(ends[k].y-ends[k-1].y<13) ends[k].y=ends[k-1].y+13;
+    ends.forEach(e=>{ g+=`<text x="${W-Rr+10}" y="${e.y+4}" class="lbl">${esc(e.s.short||e.s.n)} ${fmt(e.v)}</text>`; }); }
+  else if(n){ g+=`<text x="${xs(n-1)-6}" y="${ys(o.series[0].values[n-1])-9}" text-anchor="end" class="val">${fmt(o.series[0].values[n-1])}</text>`; }
+  o.labels.forEach((lab,i)=>{ const x0 = i===0?L:(xs(i-1)+xs(i))/2, x1 = i===n-1?W-Rr:(xs(i)+xs(i+1))/2;
+    g+=`<rect x="${x0}" y="${T}" width="${x1-x0}" height="${ph}" fill="transparent" data-tip="${tipA(lab+"\n"+o.series.map(s=>`${s.n}: ${fmt(s.values[i])}`).join("\n"))}"/>`; });
+  g += xLabels(o.labels, xs, h-8);
+  return (o.series.length>1?legend(o.series):"") + `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.aria||"Line chart")}">${g}</svg>`;
+}
+
+function barH(o){
+  const W=o.w||640, rowH=28, Lw=o.labelW||170, Rv=70, h=o.items.length*rowH+6, pw=W-Lw-Rv;
+  const max = Math.max(...o.items.map(x=>x.v), o.ref?o.ref.value:0, 1e-9)*(o.maxPad||1);
+  const lo = o.min||0, xs = v=>Lw+pw*Math.max(0,(v-lo))/(max-lo);
+  let g="";
+  o.items.forEach((it,k)=>{
+    const y=k*rowH+4, bh=16, x1=xs(it.v), dim = o.sel && o.sel!==it.key;
+    g+=`<g ${it.key&&o.xf?`data-xf="${o.xf}:${it.key}"`:""} data-tip="${tipA(it.tip||`${it.n}\n${(o.fmt||N)(it.v)}`)}">
+      <rect x="0" y="${y-3}" width="${W}" height="${rowH}" fill="transparent"/>
+      <text x="${Lw-8}" y="${y+12}" text-anchor="end" class="lbl">${esc(it.n)}</text>
+      <path d="M${Lw},${y}H${Math.max(Lw+1,x1-4)}Q${x1},${y} ${x1},${y+4}V${y+bh-4}Q${x1},${y+bh} ${Math.max(Lw+1,x1-4)},${y+bh}H${Lw}Z" style="fill:${C(it.col||"--s1")};${dim?"opacity:.3":""}"/>
+      <text x="${x1+6}" y="${y+12}" class="val">${(o.fmt||N)(it.v)}</text></g>`;
+  });
+  if(o.ref){ const x=xs(o.ref.value); g+=`<line x1="${x}" x2="${x}" y1="0" y2="${h}" style="stroke:${C("--ink2")}" stroke-dasharray="4 3"/><text x="${x+4}" y="${h+12}" class="lbl">${o.ref.label}</text>`; }
+  return `<svg viewBox="0 0 ${W} ${h+(o.ref?16:0)}" role="img" aria-label="${esc(o.aria||"Bar chart")}">${g}</svg>`;
+}
+
+function stack100(o){
+  const W=o.w||640, rowH=26, Lw=110, h=o.rows.length*rowH+4, pw=W-Lw-10;
+  let g="";
+  o.rows.forEach((r,k)=>{
+    const tot = sum(o.parts, p=>r[p.k]) || 1; let x=Lw; const y=k*rowH+4;
+    g+=`<text x="${Lw-8}" y="${y+12}" text-anchor="end" class="lbl">${esc(r.n)}</text>`;
+    o.parts.forEach((p,pi)=>{ const w = pw*r[p.k]/tot; if(w<=0) return; const ww = Math.max(0, w-(pi<o.parts.length-1?2:0));
+      g+=`<rect x="${x}" y="${y}" width="${ww}" height="16" rx="${pi===0||pi===o.parts.length-1?3:0}" style="fill:${C(p.col)}" data-tip="${tipA(`${r.n}\n${p.n}: ${N(r[p.k])} (${PC(r[p.k]/tot,0)})`)}"/>`; x+=w; });
+  });
+  return legend(o.parts) + `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.aria)}">${g}</svg>`;
+}
+
+function spark(vals, col){
+  const w=120,h=30,mx=Math.max(...vals),mn=Math.min(...vals),sp=(mx-mn)||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-3-(v-mn)/sp*(h-6)).toFixed(1)}`);
+  const last=pts[pts.length-1].split(",");
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:120px;height:30px" aria-hidden="true"><polyline points="${pts.join(" ")}" fill="none" style="stroke:${C(col||"--s1")}" stroke-width="2"/><circle cx="${last[0]}" cy="${last[1]}" r="3" style="fill:${C(col||"--s1")}"/></svg>`;
+}
+
+function table(head, rows, numFrom=1){
+  return `<div class="tbl"><table><thead><tr>${head.map((h,i)=>`<th class="${i>=numFrom?"n":""}">${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i>=numFrom?"n":""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+function heatTable(rowsDef, colsDef, valFn, fmt){
+  const vals = rowsDef.flatMap(r=>colsDef.map(c=>valFn(r,c))); const mx = Math.max(...vals,1);
+  const step = v=> v<=0?0: Math.min(5, 1+Math.floor(v/mx*4.999));
+  return `<div class="tbl"><table><thead><tr><th></th>${colsDef.map(c=>`<th class="n">${esc(c.n)}</th>`).join("")}<th class="n">Total</th></tr></thead><tbody>${
+    rowsDef.map(r=>{ const cells = colsDef.map(c=>valFn(r,c)); return `<tr><td>${esc(r.n)}</td>${cells.map(v=>{const s=step(v); return `<td class="heat" style="${s?`background:${C("--q"+s)};color:${s>=4?"#fff":C("--ink")}`:`color:${C("--muted")}`}" data-tip="${tipA(`${r.n} · ${colsDef[cells.indexOf(v)]?.n||""}\n${fmt(v)}`)}">${v?fmt(v):"–"}</td>`;}).join("")}<td class="n"><b>${fmt(sum(cells,x=>x))}</b></td></tr>`; }).join("")}</tbody></table></div>`;
+}
+function status(kind, text){ const col={good:"--good",warn:"--warn",serious:"--serious",crit:"--crit"}[kind]; const ic={good:"✓",warn:"!",serious:"!",crit:"✕"}[kind]; return `<span class="st"><i style="background:${C(col)}"></i>${ic} ${esc(text)}</span>`; }
+
+let TID=0;
+function tile(title, sub, chart, tbl, span){
+  const id = "v"+(++TID);
+  return `<section class="vis span-${span||6}"><header><div><h3>${esc(title)}</h3>${sub?`<div class="sub">${sub}</div>`:""}</div>${tbl?`<button class="tt" data-tt="${id}" aria-pressed="false">Table</button>`:""}</header><div id="c_${id}">${chart}</div>${tbl?`<div class="tview" id="t_${id}" hidden>${tbl}</div>`:""}</section>`;
+}
+function kpi(label, value, sparkVals, delta, goodWhenUp, col){
+  let d="";
+  if(delta!=null && isFinite(delta)){ const up = delta>=0, good = goodWhenUp?up:!up; d = `<b class="${good?"up":"down"}">${up?"▲":"▼"} ${Math.abs(delta*100).toFixed(1)}%</b> vs prior 4 wks`; }
+  return `<div class="kpi"><span class="l">${label}</span><span class="v">${value}</span>${sparkVals?spark(sparkVals,col):""}<span class="d">${d}</span></div>`;
+}
+function delta4(arr){ const a=arr.slice(-4).reduce((x,y)=>x+y,0), b=arr.slice(-8,-4).reduce((x,y)=>x+y,0); return b? (a-b)/b : null; }
+function ratioDelta(num,den){ const r=(s,e)=>{const n=num.slice(s,e).reduce((a,b)=>a+b,0), d=den.slice(s,e).reduce((a,b)=>a+b,0); return d?n/d:0;}; const a=r(-4), b=r(-8,-4); return b?(a-b)/b:null; }
+const labels = () => range().map(w=>w.label);
+const annotIdx = () => LAUNCH-(NW-P.weeks);
+const distName = c => DIST.find(d=>d.c===c).n;
+
+/* ================= Pages ================= */
+function pageOverview(){
+  const all = ordAll(), rows = ordP();
+  const wU = byWeek(all, r=>r.ord, true), wRev = byWeek(all, r=>r.rev, true), wOn = byWeek(all, r=>r.ontime, true), wBo = byWeek(all, r=>r.bo, true), wPortal = byWeek(all, r=>r.portal, true);
+  const fillAll = wOn.map((v,i)=>wU[i]?v/wU[i]:0);
+  const u = sum(rows,r=>r.ord), rev = sum(rows,r=>r.rev), on = sum(rows,r=>r.ontime), bo = sum(rows,r=>r.bo), por = sum(rows,r=>r.portal);
+  const sl = NW-P.weeks;
+  let h = kpi("Units ordered", N(u), wU.slice(sl), delta4(wU), true)
+    + kpi("Revenue", $K(rev), wRev.slice(sl), delta4(wRev), true)
+    + kpi("Fill rate (on time, in full)", PC(on/u), fillAll.slice(sl), ratioDelta(wOn,wU), true, "--s3")
+    + kpi("Backorder units", N(bo), wBo.slice(sl), delta4(wBo), false, "--s2")
+    + kpi("Ordered through portal", PC(por/u,0), wPortal.slice(sl).map((v,i)=>wU[sl+i]?v/wU[sl+i]:0), ratioDelta(wPortal,wU), true, "--s7")
+    + kpi("Avg units per week", N(u/P.weeks), null, null);
+  h += narrative();
+  const lineSeries = LINES.filter(l=>lineOK(l.c)).map(l=>({n:l.n, col:l.col, values:byWeek(rows.filter(r=>r.line===l.c), r=>r.ord)}));
+  h += tile("Weekly units ordered by product line", "Dashed line marks when the partner portal went live", colChart({labels:labels(), series:lineSeries, annot:annotIdx(), annotLabel:"Portal live", aria:"Weekly units by product line", w:760}),
+        table(["Week",...lineSeries.map(s=>s.n)], labels().map((l,i)=>[l,...lineSeries.map(s=>N(s.values[i]))])), 8);
+  const dU = by(rows,"d",r=>r.ord);
+  const items = DIST.filter(d=>dU[d.c]).map(d=>({n:d.n, v:dU[d.c], col:d.col, key:d.c})).sort((a,b)=>b.v-a.v);
+  h += tile("Units by distributor", R().dist?"Row level security shows your company only":"Click a bar to filter the whole report", barH({items, xf:"dist", sel:P.dist!=="ALL"?P.dist:null, labelW:180, w:420}),
+        table(["Distributor","Units"], items.map(i=>[i.n, N(i.v)])), 4);
+  const fillW = byWeek(rows,r=>r.ontime).map((v,i)=>{const t=byWeek(rows,r=>r.ord)[i]; return t?v/t:0;});
+  h += tile("Fill rate by week", "Target 95%", lineChart({labels:labels(), series:[{n:"Fill rate", col:"--s3", values:fillW}], min:.8, max:1, fmt:v=>PC(v), yfmt:v=>PC(v,0), ref:{value:.95, label:"Target 95%"}, annot:annotIdx(), annotLabel:"Portal live", w:560}),
+        table(["Week","Fill rate"], labels().map((l,i)=>[l, PC(fillW[i])])), 6);
+  const skuU = by(rows,"sku",r=>r.ord), skuR = by(rows,"sku",r=>r.rev), skuOn = by(rows,"sku",r=>r.ontime), skuBo = by(rows,"sku",r=>r.bo);
+  const top = SKU.filter(s=>skuU[s.id]).sort((a,b)=>skuR[b.id]-skuR[a.id]);
+  h += tile("Products ranked by revenue", null, table(["Product","Units","Revenue","Fill rate","Backorders"], top.map(s=>[`${esc(s.n)}<br><span class="sub">${s.id}</span>`, N(skuU[s.id]), $K(skuR[s.id]), PC(skuOn[s.id]/skuU[s.id]), N(skuBo[s.id])])), null, 6);
+  return h;
+}
+
+function narrative(){
+  const all = ordAll(); if(!all.length) return "";
+  const pre = all.filter(r=>r.i<LAUNCH), post = all.filter(r=>r.i>=LAUNCH);
+  const f = a => sum(a,r=>r.ontime)/Math.max(1,sum(a,r=>r.ord));
+  const boW = a => sum(a,r=>r.bo)/Math.max(1,new Set(a.map(r=>r.i)).size);
+  const rows = ordP(); const skuU=by(rows,"sku",r=>r.ord), skuOn=by(rows,"sku",r=>r.ontime);
+  const worst = SKU.filter(s=>skuU[s.id]).sort((a,b)=>skuOn[a.id]/skuU[a.id]-skuOn[b.id]/skuU[b.id])[0];
+  const dU = by(rows,"d",r=>r.ord); const topD = Object.keys(dU).sort((a,b)=>dU[b]-dU[a])[0];
+  const causes = by(rows.filter(r=>r.bo>0),"cause",r=>r.bo); const topC = Object.keys(causes).sort((a,b)=>causes[b]-causes[a])[0];
+  const pts = [
+    `Since the portal went live, fill rate moved from <b>${PC(f(pre))}</b> to <b>${PC(f(post))}</b>, and backorders fell from ${N(boW(pre))} to ${N(boW(post))} units a week.`,
+    topD && !R().dist ? `<b>${distName(topD)}</b> is the largest distributor in this view with ${PC(dU[topD]/sum(rows,r=>r.ord),0)} of units.` : null,
+    worst ? `Weakest fill rate: <b>${worst.n}</b> at ${PC(skuOn[worst.id]/skuU[worst.id])}. ${SKU.find(s=>s.id===worst.id).kit?"Configured models need both a base printer and a card, so a shortage of either one blocks the order.":""}` : null,
+    topC ? `Top backorder cause in this period: <b>${CAUSES.find(c=>c.c===topC).n.toLowerCase()}</b> (${PC(causes[topC]/sum(rows,r=>r.bo),0)} of backordered units).` : null
+  ].filter(Boolean);
+  return `<div class="narr"><h3>Summary for the selected filters</h3><ul>${pts.map(p=>`<li>${p}</li>`).join("")}</ul></div>`;
+}
+
+function pageVolume(){
+  const rows = ordP();
+  const ch = [{n:"EDI 850", col:"--s1", values:byWeek(rows,r=>r.edi)},{n:"Email or phone", col:"--s4", values:byWeek(rows,r=>r.manual)},{n:"Portal", col:"--s7", values:byWeek(rows,r=>r.portal)}];
+  let h = tile("Weekly units by order channel", "Meridian has no EDI, so its email and phone orders move to the portal once it goes live", colChart({labels:labels(), series:ch, annot:annotIdx(), annotLabel:"Portal live"}),
+      table(["Week",...ch.map(c=>c.n)], labels().map((l,i)=>[l,...ch.map(c=>N(c.values[i]))])), 7);
+  const whU = by(rows,"wh",r=>r.ord);
+  const whItems = WHS.filter(w=>whU[w.c]).map(w=>({n:w.n, v:whU[w.c], key:w.c, col:"--s1"}));
+  h += tile("Units shipped from each warehouse", "Click to filter", barH({items:whItems, xf:"wh", sel:P.wh!=="ALL"?P.wh:null, labelW:130, w:460}), table(["Warehouse","Units"], whItems.map(i=>[i.n,N(i.v)])), 5);
+  const dists = DIST.filter(d=>distOK(d.c)), lines = LINES.filter(l=>lineOK(l.c));
+  h += tile("Units by distributor and product line", "Darker cells mean more units. Meridian is authorized for POS and kitchen printers only.", heatTable(dists, lines, (r,c)=>sum(rows.filter(x=>x.d===r.c&&x.line===c.c),x=>x.ord), N), null, 6);
+  const revS = dists.map(d=>({n:d.n, short:d.n.split(" ")[0], col:d.col, values:byWeek(rows.filter(r=>r.d===d.c), r=>r.rev)}));
+  h += tile("Weekly revenue by distributor", null, lineChart({labels:labels(), series:revS, fmt:$K, aria:"Weekly revenue by distributor"}),
+      table(["Week",...revS.map(s=>s.short)], labels().map((l,i)=>[l,...revS.map(s=>$K(s.values[i]))])), 6);
+  const skuU = by(rows,"sku",r=>r.ord);
+  const sItems = SKU.filter(s=>skuU[s.id]).map(s=>({n:s.id, v:skuU[s.id], col:"--s1", tip:`${s.n}\n${N(skuU[s.id])} units`})).sort((a,b)=>b.v-a.v);
+  h += tile("Units by SKU", null, barH({items:sItems, labelW:110, w:960}), table(["SKU","Units"], sItems.map(i=>[i.n,N(i.v)])), 12);
+  return h;
+}
+
+function snapRows(){ return SNAP.filter(s=>lineOK(s.line)&&whOK(s.wh)); }
+function pageInventory(){
+  const sr = snapRows();
+  const oh=sum(sr,s=>s.oh), pub=sum(sr,s=>s.pub), al=sum(sr,s=>s.alloc), hold=sum(sr,s=>s.hold), wk=sum(sr,s=>s.avg);
+  const annualShip = sum(ORD.filter(r=>lineOK(r.line)&&whOK(r.wh)), r=>r.ontime+r.late)*2;
+  let h = kpi("Units on hand", N(oh)) + kpi("Published to customers", N(pub)) + kpi("Allocated to orders", N(al)) + kpi("On QC hold", N(hold))
+    + kpi("Days of supply", (oh/(wk/7)).toFixed(0)) + kpi("Inventory turns (annualized)", (annualShip/oh).toFixed(1));
+  h += `<div class="banner">Published stock is what the 846 feed and the portal show customers: on hand, minus allocated, minus QC hold, minus a 5% safety buffer.</div>`;
+  const parts = [{k:"pub", n:"Published", col:"--s1"},{k:"alloc", n:"Allocated", col:"--s2"},{k:"hold", n:"QC hold", col:"--s3"},{k:"buffer", n:"Safety buffer", col:"--s4"}];
+  const comp = SKU.filter(s=>lineOK(s.line)).map(s=>{const x=sr.filter(r=>r.sku===s.id); return {n:s.id, pub:sum(x,r=>r.pub), alloc:sum(x,r=>r.alloc), hold:sum(x,r=>r.hold), buffer:sum(x,r=>r.buffer)};});
+  h += tile("Where on hand stock goes", "Share of each SKU's on hand units", stack100({rows:comp, parts, aria:"Composition of on hand stock"}),
+      table(["SKU","Published","Allocated","QC hold","Buffer"], comp.map(c=>[c.n,N(c.pub),N(c.alloc),N(c.hold),N(c.buffer)])), 6);
+  const trend = LINES.filter(l=>lineOK(l.c)).map(l=>({n:l.n, short:l.n, col:l.col, values:range().map(w=>WHS.filter(x=>whOK(x.c)).reduce((a,x)=>a+OH[x.c][l.c][w.i],0))}));
+  h += tile("Units on hand by week", "Steps up when containers arrive", lineChart({labels:labels(), series:trend}),
+      table(["Week",...trend.map(t=>t.n)], labels().map((l,i)=>[l,...trend.map(t=>N(t.values[i]))])), 6);
+  const dosSt = d => d<14?status("crit","Under 2 weeks"):d<28?status("warn","Under 4 weeks"):d>90?status("serious","Over 90 days"):status("good","Healthy");
+  h += tile("Stock position by SKU and warehouse", "Days of supply = on hand divided by average daily orders over 8 weeks", table(["SKU","Warehouse","On hand","Allocated","QC hold","Published","Avg weekly orders","Days of supply","Status"],
+      sr.map(s=>[s.sku, s.wh, N(s.oh), N(s.alloc), N(s.hold), N(s.pub), N(s.avg), (s.oh/(s.avg/7)).toFixed(0), dosSt(s.oh/(s.avg/7))]), 2), null, 12);
+  return h;
+}
+
+function pageFill(){
+  const all = ordAll(), rows = ordP();
+  const u=sum(rows,r=>r.ord), on=sum(rows,r=>r.ontime), late=sum(rows,r=>r.late), bo=sum(rows,r=>r.bo);
+  const wU=byWeek(all,r=>r.ord,true), wOn=byWeek(all,r=>r.ontime,true), wBo=byWeek(all,r=>r.bo,true), wLate=byWeek(all,r=>r.late,true);
+  const sl=NW-P.weeks;
+  let h = kpi("Fill rate", PC(on/u), wOn.slice(sl).map((v,i)=>v/wU[sl+i]), ratioDelta(wOn,wU), true, "--s3")
+    + kpi("Shipped on time", N(on), wOn.slice(sl), delta4(wOn), true)
+    + kpi("Shipped late", N(late), wLate.slice(sl), delta4(wLate), false, "--s2")
+    + kpi("Backordered", N(bo), wBo.slice(sl), delta4(wBo), false, "--s2")
+    + kpi("Backorder rate", PC(bo/u), wBo.slice(sl).map((v,i)=>v/wU[sl+i]), ratioDelta(wBo,wU), false, "--s2")
+    + kpi("Orders affected", N(rows.filter(r=>r.bo>0).length), null, null);
+  const cs = CAUSES.map(c=>({n:c.n, col:c.col, values:byWeek(rows.filter(r=>r.cause===c.c),r=>r.bo)}));
+  h += tile("Backordered units by cause", "Stale stock data almost disappears once customers see live availability", colChart({labels:labels(), series:cs, annot:annotIdx(), annotLabel:"Portal live"}),
+      table(["Week",...cs.map(c=>c.n)], labels().map((l,i)=>[l,...cs.map(c=>N(c.values[i]))])), 7);
+  const dU=by(rows,"d",r=>r.ord), dOn=by(rows,"d",r=>r.ontime);
+  const dItems = DIST.filter(d=>dU[d.c]).map(d=>({n:d.n, v:dOn[d.c]/dU[d.c], col:d.col, key:d.c})).sort((a,b)=>b.v-a.v);
+  h += tile("Fill rate by distributor", "Click to filter", barH({items:dItems, xf:"dist", sel:P.dist!=="ALL"?P.dist:null, fmt:v=>PC(v), min:.75, maxPad:1, ref:{value:.95,label:"Target"}, labelW:180, w:460}), table(["Distributor","Fill rate"], dItems.map(i=>[i.n,PC(i.v)])), 5);
+  const sU=by(rows,"sku",r=>r.ord), sOn=by(rows,"sku",r=>r.ontime);
+  const sItems = SKU.filter(s=>sU[s.id]).map(s=>({n:s.id, v:sOn[s.id]/sU[s.id], col:s.kit?"--s2":"--s1", tip:`${s.n}\n${PC(sOn[s.id]/sU[s.id])}${s.kit?"\nConfigured model: base plus card":""}`})).sort((a,b)=>a.v-b.v);
+  h += tile("Fill rate by SKU", `${legend([{n:"Configured model (base plus card)",col:"--s2"},{n:"Single item",col:"--s1"}])}`, barH({items:sItems, fmt:v=>PC(v), min:.75, labelW:110, ref:{value:.95,label:"Target"}}), table(["SKU","Fill rate"], sItems.map(i=>[i.n,PC(i.v)])), 6);
+  const recent = rows.filter(r=>r.bo>0).sort((a,b)=>b.i-a.i||b.bo-a.bo).slice(0,10);
+  h += tile("Latest backorders", null, table(["Week","Distributor","SKU","Warehouse","Units","Cause"], recent.map(r=>[WEEKS[r.i].label, distName(r.d), r.sku, r.wh, N(r.bo), CAUSES.find(c=>c.c===r.cause).n]), 4), null, 6);
+  return h;
+}
+
+function pageSell(){
+  const st = stAll(), stP = st.filter(r=>r.i>=NW-P.weeks), isRes = !!R().res;
+  const dists = DIST.filter(d=>distOK(d.c)), lines = LINES.filter(l=>lineOK(l.c));
+  const sellIn = WEEKS.map(w=>sum(dists,d=>sum(lines,l=>SELLIN[d.c][l.c][w.i])));
+  const sellOut = byWeek(st, r=>r.u, true);
+  const chs = WEEKS.map(w=>sum(dists,d=>sum(lines,l=>CHSTOCK[d.c][l.c][w.i])));
+  const sl = NW-P.weeks; let h="";
+  if(isRes){
+    h += `<div class="banner">Signed in as <b>Pinnacle POS Solutions</b>. Row level security limits this report to your own purchases from NorthStar Distribution. Kestrel stock, other resellers and distributor margins are hidden.</div>`;
+    h += kpi("Units purchased", N(sum(stP,r=>r.u)), sellOut.slice(sl), delta4(sellOut), true) + kpi("Avg units per week", N(sum(stP,r=>r.u)/P.weeks));
+  } else {
+    const so = sum(stP,r=>r.u), si = sellIn.slice(sl).reduce((a,b)=>a+b,0), last = chs[NW-1], avgOut = sellOut.slice(-4).reduce((a,b)=>a+b,0)/4;
+    h += kpi("Sell in to distributors", N(si), sellIn.slice(sl), delta4(sellIn), true)
+      + kpi("Sell through to resellers", N(so), sellOut.slice(sl), delta4(sellOut), true)
+      + kpi("Sell through rate", PC(so/si,0), sellOut.slice(sl).map((v,i)=>sellIn[sl+i]?v/sellIn[sl+i]:0), ratioDelta(sellOut,sellIn), true, "--s3")
+      + kpi("Distributor stock (852)", N(last), chs.slice(sl), delta4(chs), false, "--s2")
+      + kpi("Weeks of channel stock", (last/avgOut).toFixed(1))
+      + kpi("Active resellers", N(new Set(stP.map(r=>r.res)).size));
+  }
+  const ser = isRes ? [{n:"Units purchased", col:"--s1", values:sellOut.slice(sl)}] : [{n:"Sell in (Kestrel to distributor)", short:"Sell in", col:"--s1", values:sellIn.slice(sl)},{n:"Sell through (distributor to reseller)", short:"Sell through", col:"--s3", values:sellOut.slice(sl)}];
+  h += tile(isRes?"Your weekly purchases":"Sell in versus sell through", isRes?null:"Both in units, one axis. A widening gap means stock is building up at distributors.", lineChart({labels:labels(), series:ser}),
+      table(["Week",...ser.map(s=>s.short||s.n)], labels().map((l,i)=>[l,...ser.map(s=>N(s.values[i]))])), isRes?12:7);
+  if(!isRes){
+    const cs = dists.map(d=>({n:d.n, short:d.n.split(" ")[0], col:d.col, values:range().map(w=>sum(lines,l=>CHSTOCK[d.c][l.c][w.i]))}));
+    h += tile("Distributor stock on hand (852 reports)", null, lineChart({labels:labels(), series:cs, w:480}), table(["Week",...cs.map(c=>c.short)], labels().map((l,i)=>[l,...cs.map(c=>N(c.values[i]))])), 5);
+    const rU = by(stP,"res",r=>r.u);
+    const rItems = RES.filter(r=>rU[r.c]).map(r=>({n:r.n, v:rU[r.c], col:DIST.find(d=>d.c===r.d).col, tip:`${r.n}\nBuys from ${distName(r.d)}\nRegion: ${r.reg}\n${N(rU[r.c])} units`})).sort((a,b)=>b.v-a.v);
+    h += tile("Top resellers by units", "Bar color shows which distributor supplies them", legend(dists)+barH({items:rItems, labelW:190}), table(["Reseller","Distributor","Region","Units"], rItems.map(i=>{const r=RES.find(x=>x.n===i.n); return [i.n, distName(r.d), r.reg, N(i.v)];}), 3), 7);
+    h += tile("Sell through by region and product line", null, heatTable(REGIONS.map(r=>({n:r, c:r})), lines, (r,c)=>sum(stP.filter(x=>x.reg===r.c&&x.line===c.c),x=>x.u), N), null, 5);
+  } else {
+    h += tile("Your purchases by product line", null, heatTable([{n:"Pinnacle POS Solutions"}], lines, (r,c)=>sum(stP.filter(x=>x.line===c.c),x=>x.u), N), null, 12);
+  }
+  return h;
+}
+
+function pageDemand(){
+  const sr = snapRows(); const lines = LINES.filter(l=>lineOK(l.c));
+  const hist = range().slice(-8).map(w=>sum(ORD.filter(r=>r.i===w.i&&lineOK(r.line)&&whOK(r.wh)),r=>r.ord));
+  const base = sum(sr,s=>avgW(s.sku,s.wh,6));
+  const fc = FWEEKS.map((_,k)=>Math.round(base*Math.pow(1.015,k+1)));
+  const inb = INB.filter(c=>whOK(c.wh)&&lineOK(SKU.find(s=>s.id===c.sku).line));
+  let oh = sum(sr,s=>s.oh); const proj=[], safe=[];
+  fc.forEach((f,k)=>{ oh += sum(inb.filter(c=>c.eta===k+1),c=>c.qty) - f; proj.push(Math.max(0,oh)); safe.push(f*2); });
+  const lbl = range().slice(-8).map(w=>w.label).concat(FWEEKS);
+  let h = tile("Order demand: last 8 weeks and 8 week forecast", "Faded columns are forecast (6 week average plus 1.5% weekly growth)",
+      colChart({labels:lbl, series:[{n:"Units", col:"--s1", values:hist.concat(fc)}], ghostFrom:8, annot:8, annotLabel:"Forecast", aria:"Demand history and forecast"}),
+      table(["Week","Units","Type"], lbl.map((l,i)=>[l, N(hist.concat(fc)[i]), i<8?"Actual":"Forecast"]), 1), 7);
+  h += tile("Projected units on hand", "Current stock plus inbound containers minus forecast. Dashed line is 2 weeks of demand as safety stock.",
+      lineChart({labels:FWEEKS, series:[{n:"Projected on hand", short:"On hand", col:"--s1", values:proj},{n:"Safety stock", short:"Safety", col:"--s8", values:safe, dash:true}], w:480}),
+      table(["Week","Projected on hand","Safety stock"], FWEEKS.map((l,i)=>[l,N(proj[i]),N(safe[i])])), 5);
+  const risk = sr.map(s=>{ let o=s.oh-s.alloc, out=null, low=null; const f=avgW(s.sku,s.wh,6);
+      for(let k=1;k<=8;k++){ o += sum(INB.filter(c=>c.sku===s.sku&&c.wh===s.wh&&c.eta===k),c=>c.qty) - f*Math.pow(1.015,k); if(low==null&&o<f*2) low=k; if(out==null&&o<0) out=k; }
+      return {...s, out, low}; }).filter(s=>s.low!=null).sort((a,b)=>(a.out||99)-(b.out||99)||a.low-b.low);
+  h += tile("SKUs at risk in the next 8 weeks", "Use this list to expedite containers or limit what is published", risk.length?table(["SKU","Warehouse","Free stock now","Below safety","Stockout","Status"],
+      risk.map(s=>[s.sku, s.wh, N(s.oh-s.alloc), FWEEKS[s.low-1], s.out?FWEEKS[s.out-1]:"Not in 8 weeks", s.out?status("crit","Stockout risk"):status("warn","Below safety")]), 2):'<p class="sub">No SKU drops below safety stock with the current filters.</p>', null, 7);
+  h += tile("Inbound containers", null, table(["Container","SKU","Warehouse","Qty","ETA","Status"],
+      inb.map(c=>[c.id, c.sku, c.wh, N(c.qty), FWEEKS[c.eta-1], c.st==="Customs hold"?status("warn",c.st):c.st==="At port"?status("good",c.st):esc(c.st)]), 3), null, 5);
+  return h;
+}
+
+function pageEDI(){
+  const ok = d => R().dist ? d===R().dist : (P.dist==="ALL"||d===P.dist);
+  const all = EDI.filter(r=>ok(r.d)), rows = all.filter(r=>r.i>=NW-P.weeks);
+  const sent=sum(rows,r=>r.sent), fail=sum(rows,r=>r.fail), ack=sum(rows,r=>r.ack), o850=sum(rows,r=>r.o850), a855=sum(rows,r=>r.a855);
+  const wS=byWeek(all,r=>r.sent,true), wF=byWeek(all,r=>r.fail,true), wA=byWeek(all,r=>r.ack,true), w850=byWeek(all,r=>r.o850,true), w855=byWeek(all,r=>r.a855,true);
+  const sl=NW-P.weeks, onT = wS.map((s,i)=>(s-wF[i])/s);
+  let h = kpi("846 delivered on schedule", PC((sent-fail)/sent,2), onT.slice(sl), null, true, "--s3")
+    + kpi("997 acknowledged", PC(ack/sent,2), wA.slice(sl).map((v,i)=>v/wS[sl+i]), null, true, "--s3")
+    + kpi("850 orders received", N(o850), w850.slice(sl), delta4(w850), true)
+    + kpi("855 sent within 24 hours", PC(a855/o850,1), w855.slice(sl).map((v,i)=>v/w850[sl+i]), ratioDelta(w855,w850), true, "--s3")
+    + kpi("Failed 846 transmissions", N(fail), wF.slice(sl), delta4(wF), false, "--s2")
+    + kpi("846 files sent", N(sent));
+  const ds = DIST.filter(d=>ok(d.c)&&d.edi!==false).map(d=>({n:d.n, short:d.n.split(" ")[0], col:d.col, values:range().map(w=>{const r=EDI.find(x=>x.i===w.i&&x.d===d.c); return (r.sent-r.fail)/r.sent;})}));
+  h += tile("846 on schedule rate by partner", "Hourly feed, 168 files a week per partner", lineChart({labels:labels(), series:ds, min:.7, max:1, fmt:v=>PC(v,1), yfmt:v=>PC(v,0), ref:{value:.99,label:"SLA 99%"}}),
+      table(["Week",...ds.map(d=>d.short)], labels().map((l,i)=>[l,...ds.map(d=>PC(d.values[i],1))])), 7);
+  const fd = by(rows,"d",r=>r.fail);
+  const fi = DIST.filter(d=>ok(d.c)&&d.edi!==false).map(d=>({n:d.n, v:fd[d.c]||0, col:d.col, key:d.c})).sort((a,b)=>b.v-a.v);
+  h += tile("Failed transmissions by partner", "Click to filter", barH({items:fi, xf:"dist", sel:P.dist!=="ALL"?P.dist:null, labelW:180, w:460}), table(["Partner","Failures"], fi.map(i=>[i.n,N(i.v)])), 5);
+  const inc = INCIDENTS.filter(x=>ok(x.d)&&x.w>=NW-P.weeks);
+  h += tile("Incident log", null, inc.length?table(["Week","Partner","What happened","Fix","Hours to resolve"], inc.map(x=>[WEEKS[x.w].label, distName(x.d), esc(x.what), esc(x.fix), N(x.hrs)]), 4):'<p class="sub">No incidents in this period.</p>', null, 12);
+  return h;
+}
+
+function pageModel(){
+  const box=(x,y,w,t,lines,col)=>`<g><rect x="${x}" y="${y}" width="${w}" height="${22+lines.length*15}" rx="6" style="fill:${C("--surface")};stroke:${C(col)}" stroke-width="1.5"/><rect x="${x}" y="${y}" width="${w}" height="20" rx="6" style="fill:${C(col)}"/><text x="${x+8}" y="${y+14}" style="fill:#fff;font-weight:600">${t}</text>${lines.map((l,i)=>`<text x="${x+8}" y="${y+34+i*15}" class="lbl">${l}</text>`).join("")}</g>`;
+  const ln=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:${C("--axis")}" stroke-width="1.5"/>`;
+  const svg = `<svg viewBox="0 0 ${W} 400" role="img" aria-label="Star schema of the semantic model">
+    ${ln(320,200,110,60)}${ln(320,200,530,60)}${ln(320,200,110,340)}${ln(320,200,530,340)}${ln(320,200,40,200)}
+    ${box(230,140,180,"Fact tables",["FactOrders (850, portal)","FactInventorySnapshot","FactAvailability (846)","FactSellThrough (852, 867)","FactEDIEvents (855, 997)"],"--s1")}
+    ${box(10,20,200,"DimDate",["Date, week, fiscal period","Portal live flag"],"--s7")}
+    ${box(430,20,200,"DimProduct",["SKU, line, list price","BOM: model to parts"],"--s7")}
+    ${box(10,300,200,"DimCustomer",["Distributor, reseller","Parent distributor, region","Entitled product lines"],"--s7")}
+    ${box(430,300,200,"DimWarehouse",["Los Angeles DC","Edison NJ DC"],"--s7")}
+    ${box(0,170,150,"DimChannel",["EDI, portal"],"--s7")}
+    ${box(460,170,180,"UserMap (security)",["User email","Customer code"],"--s2")}
+    ${ln(410,200,460,200)}
+  </svg>`;
+  let h = tile("Semantic model (star schema)", "One model feeds every page, and the portal reads the same availability numbers", svg, null, 7);
+  h += tile("Data pipeline", null, `<div class="notes">
+    <p><b>Sources.</b> Atlas ERP (orders, allocations, BOMs, customers), Harbor WMS (on hand, holds, receipts), EDI translator logs (846, 850, 852, 855, 867, 997), portal API logs.</p>
+    <p><b>Landing.</b> Nightly full load plus incremental loads every 30 minutes into a lakehouse or SQL staging area through Dataflows or Azure Data Factory.</p>
+    <p><b>Model.</b> Import mode for history and trends, DirectQuery or a 15 minute refresh for the availability table so it matches the portal.</p>
+    <p><b>Delivery.</b> Internal users get a workspace app. Distributors see the report embedded in the partner portal (Power BI Embedded) with row level security, so no Power BI licence is needed per customer user.</p>
+    <p><b>Alerts.</b> Data alerts on fill rate under 95%, failed 846s over 5 in a day, and any SKU forecast to stock out within 2 weeks.</p></div>`, null, 5);
+  h += tile("Row level security roles", "The same rules as the partner portal, enforced in the model", table(["Role","Who","Filter (DAX)","Pages"], [
+      ["Internal","Kestrel staff","None, all rows","All 8"],
+      ["Distributor","Distributor buyers",`<code>DimCustomer[DistributorCode] = LOOKUPVALUE(UserMap[Code], UserMap[Email], USERPRINCIPALNAME())</code>`,"Overview, volume, fill rate, sell through, EDI health"],
+      ["Reseller","Reseller users",`<code>DimCustomer[ResellerCode] = LOOKUPVALUE(UserMap[Code], UserMap[Email], USERPRINCIPALNAME())</code>`,"Sell through (own purchases only)"]
+    ], 9), null, 12);
+  h += tile("Key measures", null, `<pre class="code">Fill Rate = DIVIDE ( SUM ( FactOrders[UnitsOnTime] ), SUM ( FactOrders[UnitsOrdered] ) )
+
+Published Available =
+    SUM ( FactInventorySnapshot[OnHand] ) - SUM ( FactInventorySnapshot[Allocated] )
+  - SUM ( FactInventorySnapshot[QCHold] ) - SUM ( FactInventorySnapshot[SafetyBuffer] )
+
+Days of Supply = DIVIDE ( SUM ( FactInventorySnapshot[OnHand] ), [Avg Daily Orders 8 Wk] )
+
+Portal Share = DIVIDE ( CALCULATE ( SUM ( FactOrders[UnitsOrdered] ), DimChannel[Channel] = "Portal" ),
+                        SUM ( FactOrders[UnitsOrdered] ) )
+
+Weeks of Channel Stock = DIVIDE ( [Distributor Stock 852], [Avg Weekly Sell Through 4 Wk] )
+
+846 On Schedule = DIVIDE ( COUNTROWS ( FILTER ( FactEDIEvents, FactEDIEvents[Status] = "Delivered" ) ),
+                           COUNTROWS ( FactEDIEvents ) )</pre>`, null, 7);
+  h += tile("Refresh and governance", null, `<div class="notes">
+    <p><b>Last refresh</b> ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}, every 30 minutes from 6 AM to 8 PM Pacific.</p>
+    <p><b>Certified dataset</b> owned by Accounting and IT, so Sales and Ops build on one version of the numbers.</p>
+    <p><b>Change control.</b> Measures and security roles live in source control and go through a test workspace before production.</p>
+    <p><b>Audit.</b> Usage metrics show which customers open the report and which pages they use.</p></div>`, null, 5);
+  return h;
+}
+
+const RENDER = {overview:pageOverview, volume:pageVolume, inventory:pageInventory, fill:pageFill, sell:pageSell, demand:pageDemand, edi:pageEDI, model:pageModel};
+
+/* ================= Shell ================= */
+function renderSlicers(){
+  const r = R();
+  const distSel = r.dist ? `<select id="fDist" disabled><option>${esc(DIST.find(d=>d.c===r.dist).n)}</option></select>` :
+    `<select id="fDist"><option value="ALL">All distributors</option>${DIST.map(d=>`<option value="${d.c}" ${P.dist===d.c?"selected":""}>${d.n}</option>`).join("")}</select>`;
+  const chips = [];
+  if(!r.dist && P.dist!=="ALL") chips.push(`Distributor: ${distName(P.dist)}`);
+  if(P.wh!=="ALL") chips.push(`Warehouse: ${WHS.find(w=>w.c===P.wh).n}`);
+  if(P.line!=="ALL") chips.push(`Line: ${LINES.find(l=>l.c===P.line).n}`);
+  if(r.dist||r.res) chips.push(`Security: ${r.n}`);
+  $("slicers").innerHTML = `
+    <div class="sl">Period<div class="seg" role="group" aria-label="Period"><button data-w="13" aria-pressed="${P.weeks===13}">Last 13 weeks</button><button data-w="26" aria-pressed="${P.weeks===26}">Last 26 weeks</button></div></div>
+    <label class="sl" for="fWh">Warehouse<select id="fWh"><option value="ALL">All warehouses</option>${WHS.map(w=>`<option value="${w.c}" ${P.wh===w.c?"selected":""}>${w.n}</option>`).join("")}</select></label>
+    <label class="sl" for="fLine">Product line<select id="fLine"><option value="ALL">All lines</option>${LINES.map(l=>`<option value="${l.c}" ${P.line===l.c?"selected":""}>${l.n}</option>`).join("")}</select></label>
+    <label class="sl" for="fDist">Distributor${distSel}</label>
+    <button class="clear" id="clr">Clear filters</button>
+    <div class="chips">${chips.map(c=>`<span class="chip">${esc(c)}</span>`).join("")}</div>`;
+  document.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{P.weeks=+b.dataset.w; render();});
+  $("fWh").onchange=e=>{P.wh=e.target.value; render();};
+  $("fLine").onchange=e=>{P.line=e.target.value; render();};
+  if(!r.dist) $("fDist").onchange=e=>{P.dist=e.target.value; render();};
+  $("clr").onclick=()=>{P.wh="ALL"; P.line="ALL"; P.dist="ALL"; render();};
+}
+function renderPages(){
+  const allowed = R().pages;
+  $("pages").innerHTML = `<div class="ph">Pages</div>` + PAGES.map(p=>{ const ok = allowed.includes(p.k);
+    return `<button class="pg" data-p="${p.k}" ${P.page===p.k?'aria-current="page"':""} ${ok?"":"disabled"}>${p.n}${ok?"":'<span class="lock">hidden</span>'}</button>`; }).join("");
+  document.querySelectorAll(".pg").forEach(b=>b.onclick=()=>{ if(b.disabled) return; P.page=b.dataset.p; render(); });
+}
+function render(){
+  if(!R().pages.includes(P.page)) P.page = R().pages[0];
+  TID=0;
+  $("refresh").textContent = `Demo data · refreshed ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
+  renderSlicers(); renderPages();
+  $("canvas").innerHTML = RENDER[P.page]();
+  document.querySelectorAll("[data-tt]").forEach(b=>b.onclick=()=>{ const id=b.dataset.tt, t=$("t_"+id), c=$("c_"+id); const show=t.hidden; t.hidden=!show; c.hidden=show; b.textContent=show?"Chart":"Table"; b.setAttribute("aria-pressed",show); });
+  document.querySelectorAll("[data-xf]").forEach(g=>g.addEventListener("click",()=>{ const [k,v]=g.dataset.xf.split(":");
+    if(k==="dist"){ if(R().dist) return; P.dist = P.dist===v?"ALL":v; } if(k==="wh"){ P.wh = P.wh===v?"ALL":v; } render(); }));
+}
+function $(id){ return document.getElementById(id); }
+
+/* Tooltip */
+const tip = $("tip");
+document.addEventListener("pointermove", e=>{
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if(!t){ tip.hidden=true; return; }
+  tip.innerHTML = esc(t.getAttribute("data-tip")).replace(/\n/g,"<br>").replace(/^([^<]*)/,"<b>$1</b>");
+  tip.hidden=false;
+  const x = Math.min(e.clientX+14, window.innerWidth-tip.offsetWidth-8), y = Math.min(e.clientY+14, window.innerHeight-tip.offsetHeight-8);
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+});
+document.addEventListener("pointerleave", ()=>{tip.hidden=true;});
+$("role").onchange = e=>{ P.role=e.target.value; P.dist="ALL"; render(); };
+render();
+})();
+</script>
+
+<script>try{if(window.self!==window.top)document.querySelector(".backbar").hidden=true;}catch(e){}</script>
+</body>
+</html>
