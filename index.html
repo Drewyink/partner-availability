@@ -721,7 +721,7 @@ function order(cust,sku,qty){const o=placeOrder(ST,cust,sku,qty);const c=CUSTOME
  log(`D365: sales order SO-${String(4800+o.id)} created${c.channel==="EDI"?", EDI 855 queued":""}`);
  renderEngine();}
 
-function runTests(){let p=0;TESTS.forEach((t,i)=>{let ok=false;try{ok=!!t[3]();}catch(e){ok=false;}if(ok)p++;const el=$("tr"+i);el.className="pill "+(ok?"good":"bad");el.textContent=ok?"Pass":"Fail";});$("testSum").textContent=`${p} of ${TESTS.length} passed`;$("testList").dataset.ran="1";}
+function runTests(){const btn=$("runTests");btn.disabled=true;btn.textContent="Running...";$("testSum").textContent=`Running ${TESTS.length} tests...`;TESTS.forEach((t,i)=>{const el=$("tr"+i);el.className="pill";el.textContent="Waiting";});const fast=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;let p=0;TESTS.forEach((t,i)=>{setTimeout(()=>{let ok=false;try{ok=!!t[3]();}catch(e){ok=false;}if(ok)p++;const el=$("tr"+i);el.className="pill "+(ok?"good":"bad");el.textContent=ok?"Pass":"Fail";if(i===TESTS.length-1){const now=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});$("testSum").textContent=`${p} of ${TESTS.length} passed · last run ${now}`;btn.disabled=false;btn.textContent="Run all tests";$("testList").dataset.ran="1";}},fast?0:180*(i+1));});}
 
 function wire(){
  $("mNaive").onclick=()=>{ST.mode="naive";ST.orders=[];log("Switched to naive method, orders cleared");renderEngine();};
